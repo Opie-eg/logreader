@@ -1,19 +1,24 @@
 
 
-import Evtx.Evtx as evtx
+#import Evtx.Evtx as evtx
 from collections import OrderedDict
 from lxml import etree
 from lxml.etree import _Element as Element, _ElementTree as ElementTree
-
-
 from infi.systray import SysTrayIcon
-
+from winevt import EventLog
 import os
+from plyer import notification #for getting notification on your PC
+
 
 def say_hello(systray):
     print("Hello, World!")
 
-
+    hostname = "192.168.1.30" #example
+    response = os.system("ping " + hostname)
+    if response == 0:
+        print(hostname, 'is up!')
+    else:
+        print(hostname, 'is down!')
 
 def get_events(input_file, parse_xml=False):
     """Opens a Windows Event Log and returns XML information from
@@ -80,20 +85,27 @@ def open_evtx(input_file):
             if not any(x in data.text for x in ignored_notifications):
                 print(computer.text,data.text)
 
+def eventReader(systray):
+    query = EventLog.Query("Application","Event/System/Provider[@Name='Windows Error Reporting']")
 
-
-
+    for event in query:
+        for item in event.EventData.Data:
+            if "dmp" in item.cdata:
+                print(item.cdata)
     
+def eventReader2(systray):
+    query = EventLog.Query("Application")
 
-open_evtx(r"C:\Users\Diogo\Desktop\projects\logreader\Eventos.evtx")
 
-hostname = "192.168.1.30" #example
-response = os.system("ping " + hostname)
-if response == 0:
-  print(hostname, 'is up!')
-else:
-  print(hostname, 'is down!')
+    for event in query:
+        if event.System.Provider['Name'] == "Prototipo_PortalRFID":
+            print(event.System.Provider['Name'])
 
-menu_options = (("Say Hello", None, say_hello),)
+
+
+#open_evtx(r"C:\Users\Diogo\Desktop\projects\logreader\Eventos.evtx")
+
+
+menu_options = (("Say Hello", None, say_hello),("test reader",None, eventReader),("test reader2",None, eventReader2))
 systray = SysTrayIcon("hallrfid.ico", "Example tray icon", menu_options)
 systray.start()
