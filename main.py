@@ -8,7 +8,7 @@ from infi.systray import SysTrayIcon
 from winevt import EventLog
 import os
 from plyer import notification #for getting notification on your PC
-
+import time
 
 def say_hello(systray):
     print("Hello, World!")
@@ -95,13 +95,14 @@ def eventReader(systray):
     
 def eventReader2(systray):
     query = EventLog.Query("Application")
-
+    current_notifications = []
 
     for event in query:
         if event.System.Provider['Name'] == "Prototipo_PortalRFID":
-            print(event.System.Provider['Name'])
-
-
+            current_notifications.append(event)
+            #print(event.System.Provider['Name'])
+            
+    return current_notifications       
 
 #open_evtx(r"C:\Users\Diogo\Desktop\projects\logreader\Eventos.evtx")
 
@@ -109,3 +110,17 @@ def eventReader2(systray):
 menu_options = (("Say Hello", None, say_hello),("test reader",None, eventReader),("test reader2",None, eventReader2))
 systray = SysTrayIcon("hallrfid.ico", "Example tray icon", menu_options)
 systray.start()
+starttime = time.time()
+#procura por novas notificações enquanto o aplicativo está a correr
+time.sleep(5.0 - ((time.time() - starttime) % 5.0))
+last_notifications = []
+while systray._hwnd != None:
+    
+    new_notifications = eventReader2(systray)
+    if len(new_notifications) > len(last_notifications):
+        print(new_notifications[-1])
+        last_notifications= new_notifications
+        systray.update(icon="Hall_Red-33x16.ico")
+    print("Beep"+ str(systray._hwnd))
+    time.sleep(5.0 - ((time.time() - starttime) % 5.0))
+print("closed.")
