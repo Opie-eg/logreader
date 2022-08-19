@@ -8,8 +8,9 @@ from infi.systray import SysTrayIcon
 from winevt import EventLog
 import os
 from plyer import notification #for getting notification on your PC
+#from win10toast import ToastNotifier
 import time
-
+import datetime #for reading present date
 def say_hello(systray):
     print("Hello, World!")
 
@@ -17,6 +18,7 @@ def say_hello(systray):
     response = os.system("ping " + hostname)
     if response == 0:
         print(hostname, 'is up!')
+        systray.update
     else:
         print(hostname, 'is down!')
 
@@ -105,22 +107,53 @@ def eventReader2(systray):
     return current_notifications       
 
 #open_evtx(r"C:\Users\Diogo\Desktop\projects\logreader\Eventos.evtx")
-
-
-menu_options = (("Say Hello", None, say_hello),("test reader",None, eventReader),("test reader2",None, eventReader2))
-systray = SysTrayIcon("hallrfid.ico", "Example tray icon", menu_options)
-systray.start()
-starttime = time.time()
-#procura por novas notificações enquanto o aplicativo está a correr
-time.sleep(5.0 - ((time.time() - starttime) % 5.0))
-last_notifications = []
-while systray._hwnd != None:
-    
-    new_notifications = eventReader2(systray)
-    if len(new_notifications) > len(last_notifications):
-        print(new_notifications[-1])
-        last_notifications= new_notifications
-        systray.update(icon="Hall_Red-33x16.ico")
-    print("Beep"+ str(systray._hwnd))
+def notify_user():
+      notification.notify(
+                #title of the notification,
+                title = "Erro {}".format(datetime.date.today()),
+                #the body of the notification
+                message = "BlaBlaBla info",  
+                #creating icon for the notification
+                #we need to download a icon of ico file format
+                app_name = "Hall RFID - Gestão de Portal",
+                app_icon = "Hall_Blue33x16.ico",
+                # the notification stays for 50sec
+                timeout  = 5
+      )
+def main():
+    menu_options = (("Hall RFID - Gestão de Portal","hallrfid.ico",say_hello),("Reader-1-Ping: -", None, say_hello),("Serviço-RFID: -",None, eventReader))
+    systray = SysTrayIcon("hallrfid.ico", "Example tray icon", menu_options)
+    systray.start()
+    starttime = time.time()
+    ignored_notifications = ["Codigo a processar","Este codigo RFID não está autorizado a sair"]
+    #procura por novas notificações enquanto o aplicativo está a correr
     time.sleep(5.0 - ((time.time() - starttime) % 5.0))
-print("closed.")
+    last_notifications = []
+    while systray._hwnd != None:
+        new_notifications = eventReader2(systray)
+        if len(new_notifications) > len(last_notifications):
+            print(new_notifications[-1].xml)
+            last_notifications= new_notifications
+            root = etree.fromstring(new_notifications[-1].xml)
+        
+            provider = root.find(".//{http://schemas.microsoft.com/win/2004/08/events/event}Provider[@Name='Prototipo_PortalRFID']")
+            if provider is not None:
+                computer = root.find(".//{http://schemas.microsoft.com/win/2004/08/events/event}Computer")
+                data = root.find(".//{http://schemas.microsoft.com/win/2004/08/events/event}Data")
+                
+            if not any(x in data.text for x in ignored_notifications):
+                print(computer.text,data.text)
+
+           
+            if len(last_notifications)== 0:
+                pass
+            else:
+                systray.update(icon="Hall_Red-33x16.ico")
+                notify_user()
+            
+        print("Beep"+ str(systray._hwnd))
+        time.sleep(5.0 - ((time.time() - starttime) % 5.0))
+    print("closed.")
+
+main()
+
