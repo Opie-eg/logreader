@@ -1,9 +1,9 @@
 from plyer import notification #for getting notification on your PC
 from notifypy import Notify
 
-def notify_user(source,info):
-    if source == "Prototipo_PortalRFID":
-        source= "Hall RFID - Portal"
+def notify_user(info):
+    #if source == "Prototipo_PortalRFID":
+    #    source= "Hall RFID - Portal"
 
     notification = Notify(
         default_notification_title="Hall RFID - Portal",

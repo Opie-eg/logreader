@@ -34,7 +34,7 @@ def ping(host):
     command = ['ping', param, '1', host]
     process = subprocess.Popen(command,stdout=subprocess.PIPE,stderr= subprocess.PIPE)
     streamdata = process.communicate()[0]
-    #print(str(streamdata))
+    print(str(streamdata))
     if not 'Reply from {host}'in str(streamdata):
         if  'Destination host unreachable.' in str(streamdata):
             return  False
@@ -56,75 +56,8 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
         menu_title_icon.setIcon(QtGui.QIcon("hallrfid.ico"))
         menu.addSeparator()
 
-        #menudict= {}
-        #with open("config.json") as json_data:
-            #while checking:
-                #if json_data["ip"+str(i)]:
-                    #menudict["ping"+str(i)]= menu.addAction("Ping:"+ json_data["ip"+str(i)])
-                    #menudict["ping"+str(i)].triggered.connect(self.ping_ip(json_data["ip"+str(i)],i,menudict))
-                    #menudict["ping"+str(i)].setIcon(QtGui.QIcon("Hall_Red-33x16.png"))
-                #else:
-                    #checking= False
-        '''
-        with open("config.json") as f:
-            json_data = json.load(f)
-            if json_data["ip1"] is not None:
-                self.ip1 = menu.addAction(json_data["ip1"][1])
-                self.ip1.setIcon(QtGui.QIcon("readyblue.png"))
-                self.ip1.triggered.connect(self.ping_ip1)
-
-            if json_data["ip2"] is not None:
-                self.ip2 = menu.addAction(json_data["ip2"][1])
-                self.ip2.setIcon(QtGui.QIcon("readyblue.png"))
-                self.ip2.triggered.connect(self.ping_ip2)
-                
-            if json_data["ip3"] is not None:
-                self.ip3 = menu.addAction(json_data["ip3"][1])
-                self.ip3.setIcon(QtGui.QIcon("readyblue.png"))
-                self.ip3.triggered.connect(self.ping_ip3)
-                
-            if json_data["ip4"] is not None:
-                self.ip4 = menu.addAction(json_data["ip4"][1])
-                self.ip4.setIcon(QtGui.QIcon("readyblue.png"))
-                self.ip4.triggered.connect(self.ping_ip4)
-
-            if json_data["ip5"] is not None:
-                self.ip5 = menu.addAction(json_data["ip5"][1])
-                self.ip5.setIcon(QtGui.QIcon("readyblue.png"))
-                self.ip5.triggered.connect(self.ping_ip5)
-               
-            if json_data["ip6"] is not None:
-                self.ip6 = menu.addAction(json_data["ip6"][1])
-                self.ip6.setIcon(QtGui.QIcon("readyblue.png"))
-                self.ip6.triggered.connect(self.ping_ip6)
-                
-
-            if json_data["ip7"] is not None:
-                self.ip7 = menu.addAction(json_data["ip7"][1])
-                self.ip7.setIcon(QtGui.QIcon("readyblue.png"))
-                self.ip7.triggered.connect(self.ping_ip7)
-               
-
-            if json_data["ip8"] is not None:
-                self.ip8 = menu.addAction(json_data["ip8"][1])
-                self.ip8.setIcon(QtGui.QIcon("readyblue.png"))
-                self.ip8.triggered.connect(self.ping_ip8)
-                
-
-            if json_data["ip9"] is not None:
-                self.ip9 = menu.addAction(json_data["ip9"][1])
-                self.ip9.setIcon(QtGui.QIcon("readyblue.png"))
-                self.ip9.triggered.connect(self.ping_ip9)
-               
-
-            if json_data["ip10"] is not None:
-                self.ip10 = menu.addAction(json_data["ip10"][1])
-                self.ip10.setIcon(QtGui.QIcon("readyblue.png"))
-                self.ip10.triggered.connect(self.ping_ip10)
-                
-        '''
+        # Creating menu options based on ip"x" values in config.json each one of the menu options opens a page with the respective ip address.
         self.menudict = {}
-       
         iplist= []
         hostlist = []
         with open("config.json") as f:
@@ -134,16 +67,10 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
                     iplist.append(i)
             for ip in range(0,len(iplist)):
                 self.menudict["ip{0}".format(ip)]= menu.addAction(json_data[iplist[ip]][1])
-                print(ip)
-                self.menudict["ip{0}".format(ip)].triggered.connect(lambda opt=ip : print(opt))
+                self.menudict["ip{0}".format(ip)].triggered.connect(lambda ignored= iplist, a= ip: webbrowser.open_new_tab(json_data[iplist[a]][0]))
                 self.menudict["ip{0}".format(ip)].setIcon(QtGui.QIcon("readyblue.png"))
-                hostlist.append(json_data[iplist[ip]][0])
-               
-            #print(iplist[ip],json_data[iplist[ip]][0],json_data[iplist[ip]][1])
-
-        #open_cal = menu.addAction("Open Calculator")
-        #open_cal.triggered.connect(self.open_calc)
-        #open_cal.setIcon(QtGui.QIcon("Hall_Red-33x16.png"))
+                hostlist.append(json_data[iplist[ip]][0]) 
+                #print(iplist[ip],json_data[iplist[ip]][0],json_data[iplist[ip]][1])
 
         exit_ = menu.addAction("Exit")
         exit_.triggered.connect(lambda: sys.exit())
@@ -151,7 +78,7 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
 
         menu.addSeparator()
         self.setContextMenu(menu)
-        self.activated.connect(self.onTrayIconActivated)
+        #self.activated.connect(self.onTrayIconActivated)
         self.show()
        
     def onTrayIconActivated(self, reason):
@@ -162,203 +89,10 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
         """
         if reason == self.DoubleClick:
             self.open_notepad()
-        # if reason == self.Trigger:
+        #if reason == self.Trigger:
         #     self.open_notepad()
-    
-    def openpage(self,hostname):
-        webbrowser.open_new_tab(hostname)
-    '''
-    def ping_ip1(self):
-        """
-        this function will ping json ip1
-        :return:
-        """
-        with open("config.json") as f:
-            json_data = json.load(f)
-            if json_data["ip1"] is not None:
-                  hostname= json_data["ip1"][0]
-       
-        
-        webbrowser.open_new_tab(hostname)
 
-    def ping_ip2(self):
-        """
-        this function will ping json ip1
-        :return:
-        """
-        with open("config.json") as f:
-            json_data = json.load(f)
-            if json_data["ip2"] is not None:
-                  hostname= json_data["ip2"][0]
-       
-        webbrowser.open_new_tab(hostname)
-    
-    def ping_ip3(self):
-        """
-        this function will ping json ip1
-        :return:
-        """
-        with open("config.json") as f:
-            json_data = json.load(f)
-            if json_data["ip3"] is not None:
-                  hostname= json_data["ip3"][0]
-       
-        webbrowser.open_new_tab(hostname)
-    
-    def ping_ip4(self):
-        """
-        this function will ping json ip1
-        :return:
-        """
-        with open("config.json") as f:
-            json_data = json.load(f)
-            if json_data["ip4"] is not None:
-                  hostname= json_data["ip4"][0]
-       
-        webbrowser.open_new_tab(hostname)
-
-    def ping_ip5(self):
-        """
-        this function will ping json ip1
-        :return:
-        """
-        with open("config.json") as f:
-            json_data = json.load(f)
-            if json_data["ip5"] is not None:
-                  hostname= json_data["ip5"][0]
-       
-        webbrowser.open_new_tab(hostname)
-
-    def ping_ip6(self):
-        """
-        this function will ping json ip1
-        :return:
-        """
-        with open("config.json") as f:
-            json_data = json.load(f)
-            if json_data["ip6"] is not None:
-                  hostname= json_data["ip6"][0]
-       
-        webbrowser.open_new_tab(hostname)
-    
-    def ping_ip7(self):
-        """
-        this function will ping json ip1
-        :return:
-        """
-        with open("config.json") as f:
-            json_data = json.load(f)
-            if json_data["ip7"] is not None:
-                  hostname= json_data["ip7"][0]
-       
-        webbrowser.open_new_tab(hostname)
-
-    def ping_ip8(self):
-        """
-        this function will ping json ip1
-        :return:
-        """
-        with open("config.json") as f:
-            json_data = json.load(f)
-            if json_data["ip8"] is not None:
-                  hostname= json_data["ip8"][0]
-       
-        webbrowser.open_new_tab(hostname)
-
-    def ping_ip9(self):
-        """
-        this function will ping json ip1
-        :return:
-        """
-        with open("config.json") as f:
-            json_data = json.load(f)
-            if json_data["ip9"] is not None:
-                  hostname= json_data["ip9"][0]
-       
-        webbrowser.open_new_tab(hostname)
-        
-    def ping_ip10(self):
-        """
-        this function will ping json ip1
-        :return:
-        """
-        with open("config.json") as f:
-            json_data = json.load(f)
-            if json_data["ip10"] is not None:
-                  hostname= json_data["ip10"][0]
-       
-        webbrowser.open_new_tab(hostname)
-    '''
-    '''
-    def cycle_ping(self):
-        while True:
-            with open("config.json") as f:
-                json_data = json.load(f)
-                if json_data["ip1"] is not None:
-                    response = ping(json_data["ip1"][0])
-                    if response == True:
-                        self.ip1.setIcon(QtGui.QIcon("readygreen.png"))
-                    else:
-                        self.ip1.setIcon(QtGui.QIcon("notreadyred.png"))
-                        
-                if json_data["ip2"] is not None:
-                    response = ping(json_data["ip2"][0])
-                    if response == True:
-                        self.ip2.setIcon(QtGui.QIcon("readygreen.png"))
-                    else:
-                        self.ip2.setIcon(QtGui.QIcon("notreadyred.png"))
-                
-                if json_data["ip3"] is not None:
-                    response = ping(json_data["ip3"][0])
-                    if response == True:
-                        self.ip3.setIcon(QtGui.QIcon("readygreen.png"))
-                    else:
-                        self.ip3.setIcon(QtGui.QIcon("notreadyred.png"))
-                if json_data["ip4"] is not None:
-                    response = ping(json_data["ip4"][0])
-                    if response == True:
-                        self.ip4.setIcon(QtGui.QIcon("readygreen.png"))
-                    else:
-                        self.ip4.setIcon(QtGui.QIcon("notreadyred.png"))
-                if json_data["ip5"] is not None:
-                    response = ping(json_data["ip5"][0])
-                    if response == True:
-                        self.ip5.setIcon(QtGui.QIcon("readygreen.png"))
-                    else:
-                        self.ip5.setIcon(QtGui.QIcon("notreadyred.png"))
-                if json_data["ip6"] is not None:
-                    response = ping(json_data["ip6"][0])
-                    if response == True:
-                        self.ip6.setIcon(QtGui.QIcon("readygreen.png"))
-                    else:
-                        self.ip6.setIcon(QtGui.QIcon("notreadyred.png"))
-                if json_data["ip7"] is not None:
-                    response = ping(json_data["ip7"][0])
-                    if response == True:
-                        self.ip7.setIcon(QtGui.QIcon("readygreen.png"))
-                    else:
-                        self.ip7.setIcon(QtGui.QIcon("notreadyred.png"))
-                if json_data["ip8"] is not None:
-                    response = ping(json_data["ip8"][0])
-                    if response == True:
-                        self.ip8.setIcon(QtGui.QIcon("readygreen.png"))
-                    else:
-                        self.ip8.setIcon(QtGui.QIcon("notreadyred.png"))
-                if json_data["ip9"] is not None:
-                    response = ping(json_data["ip9"][0])
-                    if response == True:
-                        self.ip9.setIcon(QtGui.QIcon("readygreen.png"))
-                    else:
-                        self.ip9.setIcon(QtGui.QIcon("notreadyred.png"))
-                if json_data["ip10"] is not None:
-                    response = ping(json_data["ip10"][0])
-                    if response == True:
-                        self.ip10.setIcon(QtGui.QIcon("readygreen.png"))
-                    else:
-                        self.ip10.setIcon(QtGui.QIcon("notreadyred.png"))
-                
-            time.sleep(60*15)
-    '''        
+    # Goes through the previously created ip"x" menus and changes their icon depending on the response to their respective ip's assigned in config.json
     def cycle_ping(self):
         with open("config.json") as f:
             json_data = json.load(f)
@@ -370,47 +104,38 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
                 else:
                     self.menudict[i].setIcon(QtGui.QIcon("notreadyred.png"))
                 self.menudict[i].triggered.connect(lambda: self.openpage("google"))
-            time.sleep(60*15)
-    def open_notepad(self):
-        """
-        this function will open application
-        :return:
-        """
-        os.system('notepad')
+            time.sleep(60*json_data["tempo_espera_ping"])
 
-    def open_calc(self):
-        """
-        this function will open application
-        :return:
-        """
-        os.system('calc')
-    #def notify_user(self,source,info):
-    #    self.showMessage("%s {}".format(datetime.date.today())%source, info)
 
 #https://www.accadius.com/using-python-read-windows-event-logs-multiple-servers/
 #https://www.blog.pythonlibrary.org/2010/07/27/pywin32-getting-windows-event-logs/
 def alternative_Listening():
-    ignored_notifications = ["Codigo a processar","Este codigo RFID não está autorizado a sair"]
-    #server = '192.168.1.15' # name of the target computer to get event logs
-    #logtype = 'Application' # 'Application' # 'Security'
+    with open("config.json") as f:
+        json_data = json.load(f)
+    
+    ignored_notifications = json_data["ignored_notifications"]
+    print(ignored_notifications)
+    server = json_data["server"] # name of the target computer to get event logs
+    netdomain= json_data["network_domain"]# name of the network domain to connect to
+    logtype = 'Application' # 'Application' # 'Security'
     #filehandler = win32evtlog.OpenEventLog(server,logtype)
-    #x = input("Nome De Utilizador: ")
-    #y = getpass.getpass("Password: ")
-    #sessionlogin = win32evtlog.EvtOpenSession(('192.168.1.15',x,'GUIA',y,win32evtlog.EvtRpcLoginAuthDefault), win32evtlog.EvtRpcLogin , 0 , 0 )     
-    eventhandler = win32event.CreateEvent(None, 1, 0, "wait") #criar um evento como ponto de referencia
-    flags = win32evtlog.EVENTLOG_SEQUENTIAL_READ|\
-            win32evtlog.EVENTLOG_BACKWARDS_READ 
-    sub_flags = win32evtlog.EvtSubscribeToFutureEvents
     #win32evtlog.NotifyChangeEventLog(filehandler, eventhandler)
-    subscription = win32evtlog.EvtSubscribe('Application', sub_flags, SignalEvent= eventhandler, Callback= None, Context= None,
-    Query= "*", Session= None)
+    #flags = win32evtlog.EVENTLOG_SEQUENTIAL_READ|win32evtlog.EVENTLOG_BACKWARDS_READ 
+    x = input("Nome De Utilizador: ")
+    y = getpass.getpass("Password: ")
+    sessionlogin = win32evtlog.EvtOpenSession((server,x,netdomain,y,win32evtlog.EvtRpcLoginAuthDefault), win32evtlog.EvtRpcLogin , 0 , 0 )     
+    eventhandler = win32event.CreateEvent(None, 1, 0, "wait") #criar um evento como ponto de referencia
+    
+    sub_flags = win32evtlog.EvtSubscribeToFutureEvents
+    subscription = win32evtlog.EvtSubscribe(logtype, sub_flags, SignalEvent= eventhandler, Callback= None, Context= None,
+    Query= "*", Session= sessionlogin)
+    testo(subscription,ignored_notifications)
     while 1:
-        testo(subscription,ignored_notifications)
-        while 1:
-            #print('waiting...')
-            w=win32event.WaitForSingleObjectEx(eventhandler, 2000, True)
-            if w==win32con.WAIT_OBJECT_0:
-               break
+        w=win32event.WaitForSingleObjectEx(eventhandler, 2000, True)
+        if w==win32con.WAIT_OBJECT_0:
+            testo(subscription,ignored_notifications)
+            time.sleep(2)
+
     #eventcreate /ID 1 /L APPLICATION /T INFORMATION /SO MYEVENTSOURCE /D "My first Log"
 
 def testo(subscription,ignored_notifications):
@@ -418,17 +143,17 @@ def testo(subscription,ignored_notifications):
     if len(events)==0:
         return
     else:
-        #for event in events:
+        for event in events:
             #print(win32evtlog.EvtRender(event, win32evtlog.EvtRenderEventXml))
-        root = etree.fromstring(win32evtlog.EvtRender(events[0], win32evtlog.EvtRenderEventXml))
-        provider = root.find(".//{http://schemas.microsoft.com/win/2004/08/events/event}Provider")#[@Name='Prototipo_PortalRFID']
-        if provider is not None:
-            computer = root.find(".//{http://schemas.microsoft.com/win/2004/08/events/event}Computer")
-            data = root.find(".//{http://schemas.microsoft.com/win/2004/08/events/event}Data")
-            if data is not None and not any(x in data.text for x in ignored_notifications):
-            
-                print(computer.text,data.text)
-                notify_user(provider.text,data.text)
+            root = etree.fromstring(win32evtlog.EvtRender(event, win32evtlog.EvtRenderEventXml))
+            provider = root.find(".//{http://schemas.microsoft.com/win/2004/08/events/event}Provider[@Name='Prototipo_PortalRFID']")#
+            if provider is not None:
+                computer = root.find(".//{http://schemas.microsoft.com/win/2004/08/events/event}Computer")
+                data = root.find(".//{http://schemas.microsoft.com/win/2004/08/events/event}Data")
+                res = [ele for ele in ignored_notifications if(ele in data.text)]
+                if data is not None and bool(res) == False:
+                    print(computer.text,data.text)
+                    notify_user(data.text)
 def icon_function():
     app = QtWidgets.QApplication(sys.argv)
     w = QtWidgets.QWidget()

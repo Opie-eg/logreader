@@ -1,7 +1,10 @@
 {
-"server": "localhost", 
+"server": "192.168.1.15",
+"network_domain" : "GUIA",
+"ignored_notifications" : ["Codigo a processar","Lista do portal limpa",
+"Tag adicionada","A tag que passou no portal"],
 "ip0": ["192.168.1.30","Portal 0"],
-"ip1": ["192.168.1.31","Portal 1"],
+"ip1": ["192.168.1.100","Portal 1"],
 "ip2": ["192.168.1.32","Portal 2"],
 "ip3": ["192.168.1.33","Portal 3"],
 "ip4": ["192.168.1.34","Portal 4"],
@@ -10,5 +13,6 @@
 "ip7": ["192.168.1.37","Portal 7"],
 "ip8": ["192.168.1.38","Portal 8"],
 "ip9": ["192.168.1.39","Portal 9"],
-"adminreader": "192.168.1.50"
+"admin_reader": "192.168.1.50",
+"tempo_espera_ping": 15
 }
