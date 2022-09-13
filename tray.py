@@ -1,16 +1,11 @@
-from multiprocessing.connection import wait
-import os
 import sys
 from PySide2 import QtWidgets, QtGui
 from threading import Thread
 import time
-import datetime #for reading present date
 import win32evtlog # requires pywin32 pre-installed
 import win32event
 import win32con
-from plyer import notification #for getting notification on your PC
 import json
-from multiprocessing import Process
 from notify import notify_user 
 import platform    # For getting the operating system name
 import subprocess  # For executing a shell command
@@ -109,7 +104,7 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
 
 #https://www.accadius.com/using-python-read-windows-event-logs-multiple-servers/
 #https://www.blog.pythonlibrary.org/2010/07/27/pywin32-getting-windows-event-logs/
-def alternative_Listening():
+def eventlog_Listening():
     with open("config.json") as f:
         json_data = json.load(f)
     
@@ -129,16 +124,16 @@ def alternative_Listening():
     sub_flags = win32evtlog.EvtSubscribeToFutureEvents
     subscription = win32evtlog.EvtSubscribe(logtype, sub_flags, SignalEvent= eventhandler, Callback= None, Context= None,
     Query= "*", Session= sessionlogin)
-    testo(subscription,ignored_notifications)
+    read_event(subscription,ignored_notifications)
     while 1:
         w=win32event.WaitForSingleObjectEx(eventhandler, 2000, True)
         if w==win32con.WAIT_OBJECT_0:
-            testo(subscription,ignored_notifications)
+            read_event(subscription,ignored_notifications)
             time.sleep(2)
 
     #eventcreate /ID 1 /L APPLICATION /T INFORMATION /SO MYEVENTSOURCE /D "My first Log"
 
-def testo(subscription,ignored_notifications):
+def read_event(subscription,ignored_notifications):
     events=win32evtlog.EvtNext(subscription, 10)
     if len(events)==0:
         return
@@ -154,23 +149,24 @@ def testo(subscription,ignored_notifications):
                 if data is not None and bool(res) == False:
                     print(computer.text,data.text)
                     notify_user(data.text)
+
+
 def icon_function():
     app = QtWidgets.QApplication(sys.argv)
     w = QtWidgets.QWidget()
     tray_icon = SystemTrayIcon(QtGui.QIcon("hallrfid.ico"), w)
-    #while True:
-        #tray_icon.cycle_ping()
-        #time.sleep(60*15)
     Thread(target = tray_icon.cycle_ping).start()
     sys.exit(app.exec_())
   
-    #tray_icon.showMessage('VFX Pipeline', 'Hello "Name of logged in ID')
-    #alternative_Listening(tray_icon)
     
+
+def service_listening():
+    pass
 
 def main():
     Thread(target = icon_function).start()
-    Thread(target = alternative_Listening).start()
+    Thread(target = eventlog_Listening).start()
+    
 
 if __name__ == '__main__':
     main()
@@ -217,5 +213,4 @@ if __name__ == '__main__':
                 p.join()
                 notify_user(event.SourceName,event.StringInserts[0])
             cursorlog+=len(readlog)
-            
    '''

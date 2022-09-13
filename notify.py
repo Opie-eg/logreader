@@ -1,4 +1,4 @@
-from plyer import notification #for getting notification on your PC
+#from plyer import notification #for getting notification on your PC
 from notifypy import Notify
 
 def notify_user(info):
