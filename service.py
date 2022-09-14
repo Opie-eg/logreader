@@ -1,26 +1,27 @@
-import wmi
 
 
 #c = wmi.WMI()
-def connect_computer_services(computername,netdomain,utilizador,password):
-    username = netdomain + "\\" + utilizador
-    c = wmi.WMI(computername, user = username, password = password)
-#c = wmi.WMI("MachineB", user=r"GUIA\fred", password ="secret")
-
-
-
-def check_running_services(computer):
+def connect_computer_services(server,netdomain,utilizador,password):
+    print("Starting Connection to server...")
+    username = "%s\\%s" % (netdomain, utilizador)
+    computer = wmi.WMI(server, user = username, password = password)
+    #c = wmi.WMI("MachineB", user=r"GUIA\fred", password ="secret")
+    print("...Success!")
     stopped_services = computer.Win32_Service (State="Stopped")
     if stopped_services:
         for s in stopped_services:
             if s.Name == "Prototipo_ServicoPortalRFID":
                 print(s.Caption, "service is not running")
+                computer.Win32_Service(Name = 'Prototipo_ServicoPortalRFID')[0].StartService()
+                return False
+        return True
 
     else:
         print("No Services stopped")
 
-def start_service(computer):
-    computer.Win32_Service(Name='Prototipo_ServicoPortalRFID')[0].StartService()
+
+
+    
 # Below will output all possible service names
 #for service in c.Win32_Service():
     #print(service.Name)

@@ -7,6 +7,7 @@ import win32event
 import win32con
 import json
 from notify import notify_user 
+import wmi
 import platform    # For getting the operating system name
 import subprocess  # For executing a shell command
 import webbrowser
@@ -43,8 +44,12 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
     
     CREATE A SYSTEM TRAY ICON CLASS AND ADD MENU
     """
-    def __init__(self, icon, parent=None):
+    def __init__(self, icon, parent, server, netdomain, userinput, passinput):
         QtWidgets.QSystemTrayIcon.__init__(self, icon, parent)
+        self.server = server
+        self.netdomain = netdomain
+        self.userinput= userinput
+        self.passinput= passinput
         self.setToolTip(f'Hall RFID - Gestão de Portal')
         menu = QtWidgets.QMenu(parent)
         menu_title_icon= menu.addAction("Hall RFID - Gestão de Portal")
@@ -66,6 +71,13 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
                 self.menudict["ip{0}".format(ip)].setIcon(QtGui.QIcon("readyblue.png"))
                 hostlist.append(json_data[iplist[ip]][0]) 
                 #print(iplist[ip],json_data[iplist[ip]][0],json_data[iplist[ip]][1])
+        menu.addSeparator()
+
+        self.service_option = menu.addAction("Serviço RFID")
+        self.service_option.setIcon(QtGui.QIcon("notreadyred.png"))
+        self.service_option.triggered.connect(self.connect_computer_services)
+        self.service_option.setToolTip(f'Clique para ligar Reader')
+        menu.addSeparator()
 
         exit_ = menu.addAction("Exit")
         exit_.triggered.connect(lambda: sys.exit())
@@ -75,7 +87,21 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
         self.setContextMenu(menu)
         #self.activated.connect(self.onTrayIconActivated)
         self.show()
-       
+    def connect_computer_services(self):
+        print("Starting Connection to server...")
+        username = "%s\\%s" % (self.netdomain, self.userinput)
+        computer = wmi.WMI(self.server, user = username, password = self.passinput)
+        #c = wmi.WMI("MachineB", user=r"GUIA\fred", password ="secret")
+        print("...Success!")
+        stopped_services = computer.Win32_Service (State="Stopped")
+        if stopped_services:
+            for s in stopped_services:
+                if s.Name == "Prototipo_ServicoPortalRFID":
+                    print(s.Caption, "service is not running")
+                    computer.Win32_Service(Name = 'Prototipo_ServicoPortalRFID')[0].StartService()
+                    self.service_option.setIcon(QtGui.QIcon("readygreen.png"))
+            self.service_option.setIcon(QtGui.QIcon("readygreen.png"))
+
     def onTrayIconActivated(self, reason):
         """
         This function will trigger function on click or double click
@@ -104,21 +130,21 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
 
 #https://www.accadius.com/using-python-read-windows-event-logs-multiple-servers/
 #https://www.blog.pythonlibrary.org/2010/07/27/pywin32-getting-windows-event-logs/
-def eventlog_Listening():
-    with open("config.json") as f:
-        json_data = json.load(f)
+def eventlog_Listening(userinput,passinput,ignored_notifications,server,netdomain):
+    #with open("config.json") as f:
+        #json_data = json.load(f)
     
-    ignored_notifications = json_data["ignored_notifications"]
-    print(ignored_notifications)
-    server = json_data["server"] # name of the target computer to get event logs
-    netdomain= json_data["network_domain"]# name of the network domain to connect to
+    #ignored_notifications = json_data["ignored_notifications"]
+    #print(ignored_notifications)
+    #server = json_data["server"] # name of the target computer to get event logs
+    #netdomain= json_data["network_domain"]# name of the network domain to connect to
     logtype = 'Application' # 'Application' # 'Security'
     #filehandler = win32evtlog.OpenEventLog(server,logtype)
     #win32evtlog.NotifyChangeEventLog(filehandler, eventhandler)
     #flags = win32evtlog.EVENTLOG_SEQUENTIAL_READ|win32evtlog.EVENTLOG_BACKWARDS_READ 
-    x = input("Nome De Utilizador: ")
-    y = getpass.getpass("Password: ")
-    sessionlogin = win32evtlog.EvtOpenSession((server,x,netdomain,y,win32evtlog.EvtRpcLoginAuthDefault), win32evtlog.EvtRpcLogin , 0 , 0 )     
+    #x = userinput #input("Nome De Utilizador: ")
+    #y = passinput #getpass.getpass("Password: ")
+    sessionlogin = win32evtlog.EvtOpenSession((server,userinput,netdomain,passinput,win32evtlog.EvtRpcLoginAuthDefault), win32evtlog.EvtRpcLogin , 0 , 0 )     
     eventhandler = win32event.CreateEvent(None, 1, 0, "wait") #criar um evento como ponto de referencia
     
     sub_flags = win32evtlog.EvtSubscribeToFutureEvents
@@ -151,10 +177,10 @@ def read_event(subscription,ignored_notifications):
                     notify_user(data.text)
 
 
-def icon_function():
+def icon_function(server,netdomain,userinput,passinput):
     app = QtWidgets.QApplication(sys.argv)
     w = QtWidgets.QWidget()
-    tray_icon = SystemTrayIcon(QtGui.QIcon("hallrfid.ico"), w)
+    tray_icon = SystemTrayIcon(QtGui.QIcon("hallrfid.ico"), w , server,netdomain,userinput,passinput)
     Thread(target = tray_icon.cycle_ping).start()
     sys.exit(app.exec_())
   
@@ -164,53 +190,17 @@ def service_listening():
     pass
 
 def main():
-    Thread(target = icon_function).start()
-    Thread(target = eventlog_Listening).start()
+    with open("config.json") as f:
+        json_data = json.load(f)
+    ignored_notifications = json_data["ignored_notifications"]
+    server = json_data["server"] # name of the target computer to get event logs
+    netdomain= json_data["network_domain"]# name of the network domain to connect to
+    userinput = input("Nome De Utilizador: ")
+    passinput = getpass.getpass("Password: ")
+    Thread(target = icon_function, args=(server,netdomain,userinput,passinput,)).start()
+    Thread(target = eventlog_Listening , args=(userinput,passinput,ignored_notifications,server,netdomain,)).start()
     
 
 if __name__ == '__main__':
     main()
 
-
-
-'''
-   while 1:
-        while 1:
-            events=win32evtlog.EvtNext(s, 10)
-            if len(events)==0:
-                break
-            for event in events:
-                print (win32evtlog.EvtRender(event, win32evtlog.EvtRenderEventXml))
-            print('retrieved %s events' %len(events))
-            notify_user("beep","boop")
-        while 1:
-            #print('waiting...')
-            w=win32event.WaitForSingleObjectEx(eventhandler, 2000, True)
-            if w==win32con.WAIT_OBJECT_0:
-                break
-            '''
-
-'''cursorlog = win32evtlog.GetNumberOfEventLogRecords(filehandler)
-    cursorlog += 1
-    print("Go to : %s" % (cursorlog))#localizacao do evento criado
-    while looping == True:
-        #the timeout delay can be set to 0xFFFFFFF for infinite timeout
-        result = win32event.WaitForSingleObjectEx(eventhandler, 2000,True)
-        # Timeout
-        if result == win32con.WAIT_OBJECT_0:
-            #print("CURSORLOG: %s" % (cursorlog) )
-            readlog = win32evtlog.ReadEventLog(win32evtlog.OpenEventLog(server,logtype), flags, 1)
-            #readlog = win32evtlog.ReadEventLog(filehandler, flags, 0)
-            #readlog = win32evtlog.EvtNext(s, 10)
-            #print(len(readlog)) #sempre 22 por alguma razao???
-            readlog= [readlog[0]]
-            for event in readlog:
-                #print(event)
-                #http://timgolden.me.uk/pywin32-docs/PyEventLogRecord.html
-                print("%s : [%s] : %s" % (event.TimeGenerated.Format(), event.RecordNumber, event.SourceName))
-                p= Process(target =  notify_user, args=(event.SourceName,event.StringInserts[0],))
-                p.start()
-                p.join()
-                notify_user(event.SourceName,event.StringInserts[0])
-            cursorlog+=len(readlog)
-   '''
