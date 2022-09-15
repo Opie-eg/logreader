@@ -1,4 +1,5 @@
 import sys
+import pythoncom
 from PySide2 import QtWidgets, QtGui
 from threading import Thread
 import time
@@ -30,7 +31,7 @@ def ping(host):
     command = ['ping', param, '1', host]
     process = subprocess.Popen(command,stdout=subprocess.PIPE,stderr= subprocess.PIPE)
     streamdata = process.communicate()[0]
-    print(str(streamdata))
+    #print(str(streamdata))
     if not 'Reply from {host}'in str(streamdata):
         if  'Destination host unreachable.' in str(streamdata):
             return  False
@@ -55,7 +56,7 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
         menu_title_icon= menu.addAction("Hall RFID - Gestão de Portal")
         menu_title_icon.setIcon(QtGui.QIcon("hallrfid.ico"))
         menu.addSeparator()
-
+        menu.setToolTipsVisible(True)
         # Creating menu options based on ip"x" values in config.json each one of the menu options opens a page with the respective ip address.
         self.menudict = {}
         iplist= []
@@ -69,39 +70,75 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
                 self.menudict["ip{0}".format(ip)]= menu.addAction(json_data[iplist[ip]][1])
                 self.menudict["ip{0}".format(ip)].triggered.connect(lambda ignored= iplist, a= ip: webbrowser.open_new_tab(json_data[iplist[a]][0]))
                 self.menudict["ip{0}".format(ip)].setIcon(QtGui.QIcon("readyblue.png"))
+                self.menudict["ip{0}".format(ip)].setToolTip('Abrir Página de Administração')
                 hostlist.append(json_data[iplist[ip]][0]) 
                 #print(iplist[ip],json_data[iplist[ip]][0],json_data[iplist[ip]][1])
         menu.addSeparator()
-
         self.service_option = menu.addAction("Serviço RFID")
-        self.service_option.setIcon(QtGui.QIcon("notreadyred.png"))
-        self.service_option.triggered.connect(self.connect_computer_services)
-        self.service_option.setToolTip(f'Clique para ligar Reader')
+        self.service_option.setIcon(QtGui.QIcon("readyblue.png"))
+        self.service_option.triggered.connect(lambda : Thread(target = self.start_service).start())
+        self.service_option.setToolTip('Clicar para ligar o Serviço.')
+        #self.service_option.setToolTip('Serviço ativo')
+          
         menu.addSeparator()
 
-        exit_ = menu.addAction("Exit")
+        exit_ = menu.addAction("Sair")
         exit_.triggered.connect(lambda: sys.exit())
-        exit_.setIcon(QtGui.QIcon("Hall_Red-33x16.png"))
+        
 
         menu.addSeparator()
         self.setContextMenu(menu)
         #self.activated.connect(self.onTrayIconActivated)
         self.show()
+
     def connect_computer_services(self):
+        with open("config.json") as f:
+                json_data = json.load(f)
+        while True:
+            pythoncom.CoInitialize()
+            try:
+                print("Starting Connection to server...")
+                username = "%s\\%s" % (self.netdomain, self.userinput)
+                computer = wmi.WMI(self.server, user = username, password = self.passinput)
+                #c = wmi.WMI("MachineB", user=r"GUIA\fred", password ="secret")
+                print("...Success!")
+                stopped_services = computer.Win32_Service (State="Stopped")
+                servicefound = False
+                if stopped_services:
+                    for s in stopped_services:
+                        if s.Name == "Prototipo_ServicoPortalRFID":
+                            print(s.Caption, "service is not running")
+                            servicefound = True
+                            #computer.Win32_Service(Name = 'Prototipo_ServicoPortalRFID')[0].StartService()
+                            self.service_option.setIcon(QtGui.QIcon("notreadyred.png"))
+                            
+                    if servicefound == False:
+                        self.service_option.setIcon(QtGui.QIcon("readygreen.png"))
+            finally:
+                pythoncom.CoUninitialize()
+            time.sleep(60*2)
+    
+    def start_service(self):
+        pythoncom.CoInitialize()
+        try:
+            print("Starting Connection to server...")
+            username = "%s\\%s" % (self.netdomain, self.userinput)
+            computer = wmi.WMI(self.server, user = username, password = self.passinput)
+            print("...Success!")
+            computer.Win32_Service(Name = 'Prototipo_ServicoPortalRFID')[0].StartService()
+        finally:
+            pythoncom.CoUninitialize()
+    '''
+    def start_service(self):
         print("Starting Connection to server...")
         username = "%s\\%s" % (self.netdomain, self.userinput)
         computer = wmi.WMI(self.server, user = username, password = self.passinput)
-        #c = wmi.WMI("MachineB", user=r"GUIA\fred", password ="secret")
         print("...Success!")
-        stopped_services = computer.Win32_Service (State="Stopped")
-        if stopped_services:
-            for s in stopped_services:
-                if s.Name == "Prototipo_ServicoPortalRFID":
-                    print(s.Caption, "service is not running")
-                    computer.Win32_Service(Name = 'Prototipo_ServicoPortalRFID')[0].StartService()
-                    self.service_option.setIcon(QtGui.QIcon("readygreen.png"))
-            self.service_option.setIcon(QtGui.QIcon("readygreen.png"))
+        computer.Win32_Service(Name = 'Prototipo_ServicoPortalRFID')[0].StartService()
+        self.connect_computer_services()
 
+    '''
+    
     def onTrayIconActivated(self, reason):
         """
         This function will trigger function on click or double click
@@ -131,43 +168,32 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
 #https://www.accadius.com/using-python-read-windows-event-logs-multiple-servers/
 #https://www.blog.pythonlibrary.org/2010/07/27/pywin32-getting-windows-event-logs/
 def eventlog_Listening(userinput,passinput,ignored_notifications,server,netdomain):
-    #with open("config.json") as f:
-        #json_data = json.load(f)
-    
-    #ignored_notifications = json_data["ignored_notifications"]
-    #print(ignored_notifications)
-    #server = json_data["server"] # name of the target computer to get event logs
-    #netdomain= json_data["network_domain"]# name of the network domain to connect to
     logtype = 'Application' # 'Application' # 'Security'
-    #filehandler = win32evtlog.OpenEventLog(server,logtype)
-    #win32evtlog.NotifyChangeEventLog(filehandler, eventhandler)
-    #flags = win32evtlog.EVENTLOG_SEQUENTIAL_READ|win32evtlog.EVENTLOG_BACKWARDS_READ 
-    #x = userinput #input("Nome De Utilizador: ")
-    #y = passinput #getpass.getpass("Password: ")
     sessionlogin = win32evtlog.EvtOpenSession((server,userinput,netdomain,passinput,win32evtlog.EvtRpcLoginAuthDefault), win32evtlog.EvtRpcLogin , 0 , 0 )     
     eventhandler = win32event.CreateEvent(None, 1, 0, "wait") #criar um evento como ponto de referencia
-    
     sub_flags = win32evtlog.EvtSubscribeToFutureEvents
     subscription = win32evtlog.EvtSubscribe(logtype, sub_flags, SignalEvent= eventhandler, Callback= None, Context= None,
-    Query= "*", Session= sessionlogin)
+    Query= "*", Session= None)
     read_event(subscription,ignored_notifications)
     while 1:
         w=win32event.WaitForSingleObjectEx(eventhandler, 2000, True)
         if w==win32con.WAIT_OBJECT_0:
             read_event(subscription,ignored_notifications)
+            #w=win32event.WaitForSingleObjectEx(eventhandler, 2000, True)
             time.sleep(2)
 
     #eventcreate /ID 1 /L APPLICATION /T INFORMATION /SO MYEVENTSOURCE /D "My first Log"
 
 def read_event(subscription,ignored_notifications):
     events=win32evtlog.EvtNext(subscription, 10)
+    print(events)
     if len(events)==0:
         return
     else:
         for event in events:
             #print(win32evtlog.EvtRender(event, win32evtlog.EvtRenderEventXml))
             root = etree.fromstring(win32evtlog.EvtRender(event, win32evtlog.EvtRenderEventXml))
-            provider = root.find(".//{http://schemas.microsoft.com/win/2004/08/events/event}Provider[@Name='Prototipo_PortalRFID']")#
+            provider = root.find(".//{http://schemas.microsoft.com/win/2004/08/events/event}Provider")#[@Name='Prototipo_PortalRFID']")
             if provider is not None:
                 computer = root.find(".//{http://schemas.microsoft.com/win/2004/08/events/event}Computer")
                 data = root.find(".//{http://schemas.microsoft.com/win/2004/08/events/event}Data")
@@ -182,6 +208,7 @@ def icon_function(server,netdomain,userinput,passinput):
     w = QtWidgets.QWidget()
     tray_icon = SystemTrayIcon(QtGui.QIcon("hallrfid.ico"), w , server,netdomain,userinput,passinput)
     Thread(target = tray_icon.cycle_ping).start()
+    Thread(target = tray_icon.connect_computer_services).start()
     sys.exit(app.exec_())
   
     

@@ -2,7 +2,7 @@
 "server": "192.168.1.15",
 "network_domain" : "GUIA",
 "ignored_notifications" : ["Codigo a processar","Lista do portal limpa",
-"Tag adicionada","A tag que passou no portal"],
+"Tag adicionada","A tag que passou no portal","Usar web service?:"],
 "ip0": ["192.168.1.30","Portal 0"],
 "ip1": ["192.168.1.100","Portal 1"],
 "ip2": ["192.168.1.32","Portal 2"],
