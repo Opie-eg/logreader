@@ -1,1 +1,33 @@
 https://stackoverflow.com/questions/25499050/wmi-the-rpc-server-is-unavailable-exception-from-hresult-0x800706ba
+
+
+Registry:
+    HKEY_LOCAL_MACHINE>SOFTWARE>Microsoft>COM3->(Dentro do ficheiro) RemoteAccessEnabled-> definir 1 hexadecimal
+Firewall:
+        Permitir que uma aplicação ou funcionalidade passe pela Firewall do Windows Defender> Alterar definições :
+-> Assistência remota
+-> Encaminhamento e acesso remoto
+-> Gestão do Registo de Eventos remoto
+-> Gestão do Serviço remoto
+-> Gestão Remota do Windows 
+-> Gestão Remota do Windows (Compatibilidade)
+-> Instrumentação de gestão do Windows (WMI)
+-> Monitor de Eventos Remotos
+
+Firewall // Regras de Entrada:
+-> Assistência remota DCOM, e outras
+-> Windows Management instrumentation (todas)
+
+Serviços a correr: ->
+-> Chamada de Procedimento Remoto(RPC) 
+-> Encaminhamento e acesso remoto
+-> Gestor de ligação de acesso remoto /// Gestor de ligação automática de acesso remoto
+-> Gestor de ligações do windows 
+-> Iniciar Processo de Servidor DCOM
+-> Localizador de 'Chamada de Procedimento Remoto'(RPC) 
+-> WMI (Instrumento de gestão do Windows)
+
+Outros requisitos:
+-> Certificar que ambos o servidor e o utilizador estejam no mesmo dominio de rede,
+-> Certificar que o utilizador tenha acesso / permissões administração relativas ao servidor
+-> Certificar que o utilizador consiga efetuar pedidos ping ao servidor.

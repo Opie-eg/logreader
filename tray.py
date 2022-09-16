@@ -197,10 +197,11 @@ def read_event(subscription,ignored_notifications):
             if provider is not None:
                 computer = root.find(".//{http://schemas.microsoft.com/win/2004/08/events/event}Computer")
                 data = root.find(".//{http://schemas.microsoft.com/win/2004/08/events/event}Data")
-                res = [ele for ele in ignored_notifications if(ele in data.text)]
-                if data is not None and bool(res) == False:
-                    print(computer.text,data.text)
-                    notify_user(data.text)
+                if data is not None:
+                    res = [ele for ele in ignored_notifications if(ele in data.text)]
+                    if bool(res) == False:
+                        print(computer.text,data.text)
+                        notify_user(data.text)
 
 
 def icon_function(server,netdomain,userinput,passinput):
