@@ -54,7 +54,7 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
         self.setToolTip(f'Hall RFID - Gestão de Portal')
         menu = QtWidgets.QMenu(parent)
         menu_title_icon= menu.addAction("Hall RFID - Gestão de Portal")
-        menu_title_icon.setIcon(QtGui.QIcon("hallrfid.ico"))
+        menu_title_icon.setIcon(QtGui.QIcon("ICONE_AZUL.ico"))
         menu.addSeparator()
         menu.setToolTipsVisible(True)
         # Creating menu options based on ip"x" values in config.json each one of the menu options opens a page with the respective ip address.
@@ -100,7 +100,7 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
                 print("Starting Connection to server...")
                 username = "%s\\%s" % (self.netdomain, self.userinput)
                 computer = wmi.WMI(self.server, user = username, password = self.passinput)
-                #c = wmi.WMI("MachineB", user=r"GUIA\fred", password ="secret")
+                #c = wmi.WMI("MachineB", user=r"GUIA\fred", passwor\d ="secret")
                 print("...Success!")
                 stopped_services = computer.Win32_Service (State="Stopped")
                 servicefound = False
@@ -152,16 +152,23 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
 
     # Goes through the previously created ip"x" menus and changes their icon depending on the response to their respective ip's assigned in config.json
     def cycle_ping(self):
+        counter = 0
         with open("config.json") as f:
             json_data = json.load(f)
         while True:
             for i in self.menudict:
                 response = ping(json_data[i][0])
                 if response == True:
+                    counter += 1
                     self.menudict[i].setIcon(QtGui.QIcon("readygreen.png"))
                 else:
                     self.menudict[i].setIcon(QtGui.QIcon("notreadyred.png"))
-                self.menudict[i].triggered.connect(lambda: self.openpage("google"))
+                #self.menudict[i].triggered.connect(lambda: self.openpage("google"))
+            if counter < len(self.menudict):
+                self.menu_title_icon.setIcon(QtGui.QIcon("ICONE_LARANJA.ico"))
+            elif counter >= len(self.menudict):
+                self.menu_title_icon.setIcon(QtGui.QIcon("ICONE_AZUL.ico"))
+            counter = 0 
             time.sleep(60*json_data["tempo_espera_ping"])
 
 
@@ -207,16 +214,11 @@ def read_event(subscription,ignored_notifications):
 def icon_function(server,netdomain,userinput,passinput):
     app = QtWidgets.QApplication(sys.argv)
     w = QtWidgets.QWidget()
-    tray_icon = SystemTrayIcon(QtGui.QIcon("hallrfid.ico"), w , server,netdomain,userinput,passinput)
+    tray_icon = SystemTrayIcon(QtGui.QIcon("ICONE_AZUL.ico"), w , server,netdomain,userinput,passinput)
     Thread(target = tray_icon.cycle_ping).start()
-    Thread(target = tray_icon.connect_computer_services).start()
+    #Thread(target = tray_icon.connect_computer_services).start()
     sys.exit(app.exec_())
   
-    
-
-def service_listening():
-    pass
-
 def main():
     with open("config.json") as f:
         json_data = json.load(f)
