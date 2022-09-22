@@ -31,3 +31,4 @@ Outros requisitos:
 -> Certificar que ambos o servidor e o utilizador estejam no mesmo dominio de rede,
 -> Certificar que o utilizador tenha acesso / permissões administração relativas ao servidor
 -> Certificar que o utilizador consiga efetuar pedidos ping ao servidor.
+-> Certificar que o utilizador tenha corretamente definido o seu IPv4, Gateway , DNS 

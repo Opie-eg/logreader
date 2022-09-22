@@ -1,3 +1,4 @@
+from asyncore import read
 import sys
 import pythoncom
 from PySide2 import QtWidgets, QtGui
@@ -15,7 +16,7 @@ import webbrowser
 import getpass
 from lxml import etree
 from lxml.etree import _Element as Element, _ElementTree as ElementTree
-
+import os 
 looping = True
 
 def ping(host):
@@ -53,8 +54,8 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
         self.passinput= passinput
         self.setToolTip(f'Hall RFID - Gestão de Portal')
         menu = QtWidgets.QMenu(parent)
-        menu_title_icon= menu.addAction("Hall RFID - Gestão de Portal")
-        menu_title_icon.setIcon(QtGui.QIcon("ICONE_AZUL.ico"))
+        self.menu_title_icon= menu.addAction("Hall RFID - Gestão de Portal")
+        self.menu_title_icon.setIcon(QtGui.QIcon("ICONE_AZUL.ico"))
         menu.addSeparator()
         menu.setToolTipsVisible(True)
         # Creating menu options based on ip"x" values in config.json each one of the menu options opens a page with the respective ip address.
@@ -111,12 +112,14 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
                             servicefound = True
                             #computer.Win32_Service(Name = 'Prototipo_ServicoPortalRFID')[0].StartService()
                             self.service_option.setIcon(QtGui.QIcon("notreadyred.png"))
+                            self.menu_title_icon.setIcon(QtGui.QIcon("ICONE_VERMELHO.ico"))
                             
                     if servicefound == False:
                         self.service_option.setIcon(QtGui.QIcon("readygreen.png"))
+                        self.menu_title_icon.setIcon(QtGui.QIcon("ICONE_AZUL.ico"))
             finally:
                 pythoncom.CoUninitialize()
-            time.sleep(60*2)
+            time.sleep(60*60*json_data["tempo_espera_servico_horas"])
     
     def start_service(self):
         pythoncom.CoInitialize()
@@ -136,7 +139,6 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
         print("...Success!")
         computer.Win32_Service(Name = 'Prototipo_ServicoPortalRFID')[0].StartService()
         self.connect_computer_services()
-
     '''
     
     def onTrayIconActivated(self, reason):
@@ -169,7 +171,7 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
             elif counter >= len(self.menudict):
                 self.menu_title_icon.setIcon(QtGui.QIcon("ICONE_AZUL.ico"))
             counter = 0 
-            time.sleep(60*json_data["tempo_espera_ping"])
+            time.sleep(60*json_data["tempo_espera_ping_minutos"])
 
 
 #https://www.accadius.com/using-python-read-windows-event-logs-multiple-servers/
@@ -201,22 +203,54 @@ def read_event(subscription,ignored_notifications):
             #print(win32evtlog.EvtRender(event, win32evtlog.EvtRenderEventXml))
             root = etree.fromstring(win32evtlog.EvtRender(event, win32evtlog.EvtRenderEventXml))
             provider = root.find(".//{http://schemas.microsoft.com/win/2004/08/events/event}Provider")#[@Name='Prototipo_PortalRFID']")
+            info = []
             if provider is not None:
                 computer = root.find(".//{http://schemas.microsoft.com/win/2004/08/events/event}Computer")
                 data = root.find(".//{http://schemas.microsoft.com/win/2004/08/events/event}Data")
                 if data is not None:
                     res = [ele for ele in ignored_notifications if(ele in data.text)]
                     if bool(res) == False:
-                        print(computer.text,data.text)
+                        new_info= computer.text + time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()) + data.text
+                        info.append(new_info)
+                        print(new_info)
+                        #new func here
                         notify_user(data.text)
+            if len(info) > 0:
+                record_log(info)
 
+def record_log(info):
+    file_name = 'event_logs.log'
+    stat_file = 'statistics.txt'
+    if os.path.exists(file_name):
+        append_write = 'a' # append if already exists
+    else:
+        append_write = 'w' # make a new file if not
+
+    f = open(file_name, append_write)  # open file in write mode
+    for i in info:
+        f.write(i)
+    f.close()
+
+    if os.path.exists(stat_file):
+        append_write = 'a' # append if already exists
+    else:
+        append_write = 'w' # make a new file if not
+    f = open(file_name, "r")
+    f2 = open(stat_file, append_write)
+    for i in f:
+        if i == "X":
+            pass
+        elif i== "Y":
+            pass
+    f.close
+    f2.close
 
 def icon_function(server,netdomain,userinput,passinput):
     app = QtWidgets.QApplication(sys.argv)
     w = QtWidgets.QWidget()
     tray_icon = SystemTrayIcon(QtGui.QIcon("ICONE_AZUL.ico"), w , server,netdomain,userinput,passinput)
     Thread(target = tray_icon.cycle_ping).start()
-    #Thread(target = tray_icon.connect_computer_services).start()
+    Thread(target = tray_icon.connect_computer_services).start()
     sys.exit(app.exec_())
   
 def main():

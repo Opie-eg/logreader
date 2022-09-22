@@ -14,5 +14,6 @@
 "ip8": ["192.168.1.38","Portal 8"],
 "ip9": ["192.168.1.39","Portal 9"],
 "admin_reader": "192.168.1.50",
-"tempo_espera_ping": 15
+"tempo_espera_ping_minutos": 15,
+"tempo_espera_servico_horas": 12
 }
