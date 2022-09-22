@@ -1,4 +1,3 @@
-from asyncore import read
 import sys
 import pythoncom
 from PySide2 import QtWidgets, QtGui
@@ -92,7 +91,7 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
         #self.activated.connect(self.onTrayIconActivated)
         self.show()
 
-    def connect_computer_services(self):
+    def connect_computer_services(self,cycle=None):
         with open("config.json") as f:
                 json_data = json.load(f)
         while True:
@@ -112,14 +111,18 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
                             servicefound = True
                             #computer.Win32_Service(Name = 'Prototipo_ServicoPortalRFID')[0].StartService()
                             self.service_option.setIcon(QtGui.QIcon("notreadyred.png"))
-                            self.menu_title_icon.setIcon(QtGui.QIcon("ICONE_VERMELHO.ico"))
+                            self.setIcon(QtGui.QIcon("ICONE_VERMELHO.ico"))
                             
                     if servicefound == False:
                         self.service_option.setIcon(QtGui.QIcon("readygreen.png"))
-                        self.menu_title_icon.setIcon(QtGui.QIcon("ICONE_AZUL.ico"))
+                        self.setIcon(QtGui.QIcon("ICONE_AZUL.ico"))
             finally:
                 pythoncom.CoUninitialize()
-            time.sleep(60*60*json_data["tempo_espera_servico_horas"])
+            if cycle == None:
+                time.sleep(60*60*json_data["tempo_espera_servico_horas"])
+            else:
+                break
+                
     
     def start_service(self):
         pythoncom.CoInitialize()
@@ -129,6 +132,7 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
             computer = wmi.WMI(self.server, user = username, password = self.passinput)
             print("...Success!")
             computer.Win32_Service(Name = 'Prototipo_ServicoPortalRFID')[0].StartService()
+            self.connect_computer_services(self,1)
         finally:
             pythoncom.CoUninitialize()
     '''
@@ -167,9 +171,9 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
                     self.menudict[i].setIcon(QtGui.QIcon("notreadyred.png"))
                 #self.menudict[i].triggered.connect(lambda: self.openpage("google"))
             if counter < len(self.menudict):
-                self.menu_title_icon.setIcon(QtGui.QIcon("ICONE_LARANJA.ico"))
+                self.setIcon(QtGui.QIcon("ICONE_LARANJA.ico"))
             elif counter >= len(self.menudict):
-                self.menu_title_icon.setIcon(QtGui.QIcon("ICONE_AZUL.ico"))
+                self.setIcon(QtGui.QIcon("ICONE_AZUL.ico"))
             counter = 0 
             time.sleep(60*json_data["tempo_espera_ping_minutos"])
 
@@ -182,7 +186,7 @@ def eventlog_Listening(userinput,passinput,ignored_notifications,server,netdomai
     eventhandler = win32event.CreateEvent(None, 1, 0, "wait") #criar um evento como ponto de referencia
     sub_flags = win32evtlog.EvtSubscribeToFutureEvents
     subscription = win32evtlog.EvtSubscribe(logtype, sub_flags, SignalEvent= eventhandler, Callback= None, Context= None,
-    Query= "*", Session= None)
+    Query= "*", Session= sessionlogin)
     read_event(subscription,ignored_notifications)
     while 1:
         w=win32event.WaitForSingleObjectEx(eventhandler, 2000, True)
@@ -248,6 +252,7 @@ def record_log(info):
 def icon_function(server,netdomain,userinput,passinput):
     app = QtWidgets.QApplication(sys.argv)
     w = QtWidgets.QWidget()
+    
     tray_icon = SystemTrayIcon(QtGui.QIcon("ICONE_AZUL.ico"), w , server,netdomain,userinput,passinput)
     Thread(target = tray_icon.cycle_ping).start()
     Thread(target = tray_icon.connect_computer_services).start()
