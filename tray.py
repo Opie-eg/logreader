@@ -1,3 +1,4 @@
+
 import sys
 import pythoncom
 from PySide2 import QtWidgets, QtGui
@@ -132,7 +133,7 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
             computer = wmi.WMI(self.server, user = username, password = self.passinput)
             print("...Success!")
             computer.Win32_Service(Name = 'Prototipo_ServicoPortalRFID')[0].StartService()
-            self.connect_computer_services(self,1)
+            #self.connect_computer_services(1)
         finally:
             pythoncom.CoUninitialize()
     '''
@@ -214,11 +215,16 @@ def read_event(subscription,ignored_notifications):
                 if data is not None:
                     res = [ele for ele in ignored_notifications if(ele in data.text)]
                     if bool(res) == False:
-                        new_info= computer.text + time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()) + data.text
+                        if "reader não ligou" in data.text:
+                            resposta = "O reader não ligou."
+                        else:
+                            resposta = data.text
+                        
+                        new_info= computer.text +";"+ time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())+";"+ resposta
                         info.append(new_info)
                         print(new_info)
                         #new func here
-                        notify_user(data.text)
+                        notify_user(resposta)
             if len(info) > 0:
                 record_log(info)
 
@@ -230,17 +236,17 @@ def record_log(info):
     else:
         append_write = 'w' # make a new file if not
 
-    f = open(file_name, append_write)  # open file in write mode
+    f = open(file_name, append_write, encoding= "utf-8")  # open file in write mode
     for i in info:
-        f.write(i)
+        f.write(i + "\n")
     f.close()
 
     if os.path.exists(stat_file):
         append_write = 'a' # append if already exists
     else:
         append_write = 'w' # make a new file if not
-    f = open(file_name, "r")
-    f2 = open(stat_file, append_write)
+    f = open(file_name, "r", encoding= "utf-8")
+    f2 = open(stat_file, append_write, encoding= "utf-8")
     for i in f:
         if i == "X":
             pass
@@ -264,8 +270,8 @@ def main():
     ignored_notifications = json_data["ignored_notifications"]
     server = json_data["server"] # name of the target computer to get event logs
     netdomain= json_data["network_domain"]# name of the network domain to connect to
-    userinput = input("Nome De Utilizador: ")
-    passinput = getpass.getpass("Password: ")
+    userinput = "dcarreiro"#input("Nome De Utilizador: ")
+    passinput = "Dcvb456$%&"#getpass.getpass("Password: ")
     Thread(target = icon_function, args=(server,netdomain,userinput,passinput,)).start()
     Thread(target = eventlog_Listening , args=(userinput,passinput,ignored_notifications,server,netdomain,)).start()
     
