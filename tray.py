@@ -55,7 +55,7 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
         self.setToolTip(f'Hall RFID - Gestão de Portal')
         menu = QtWidgets.QMenu(parent)
         self.menu_title_icon= menu.addAction("Hall RFID - Gestão de Portal")
-        self.menu_title_icon.setIcon(QtGui.QIcon("ICONE_AZUL.ico"))
+        self.menu_title_icon.setIcon(QtGui.QIcon("Hall_Blue-320x320.png"))
         menu.addSeparator()
         menu.setToolTipsVisible(True)
         # Creating menu options based on ip"x" values in config.json each one of the menu options opens a page with the respective ip address.
@@ -112,11 +112,11 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
                             servicefound = True
                             #computer.Win32_Service(Name = 'Prototipo_ServicoPortalRFID')[0].StartService()
                             self.service_option.setIcon(QtGui.QIcon("notreadyred.png"))
-                            self.setIcon(QtGui.QIcon("ICONE_VERMELHO.ico"))
-                            
+                            self.setIcon(QtGui.QIcon("Hall_Red-320x320.png"))
+
                     if servicefound == False:
                         self.service_option.setIcon(QtGui.QIcon("readygreen.png"))
-                        self.setIcon(QtGui.QIcon("ICONE_AZUL.ico"))
+                        self.setIcon(QtGui.QIcon("Hall_Blue-320x320.png"))
             finally:
                 pythoncom.CoUninitialize()
             if cycle == None:
@@ -172,9 +172,9 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
                     self.menudict[i].setIcon(QtGui.QIcon("notreadyred.png"))
                 #self.menudict[i].triggered.connect(lambda: self.openpage("google"))
             if counter < len(self.menudict):
-                self.setIcon(QtGui.QIcon("ICONE_LARANJA.ico"))
+                self.setIcon(QtGui.QIcon("Hall_Orange-320x320.png"))
             elif counter >= len(self.menudict):
-                self.setIcon(QtGui.QIcon("ICONE_AZUL.ico"))
+                self.setIcon(QtGui.QIcon("Hall_Blue-320x320.png"))
             counter = 0 
             time.sleep(60*json_data["tempo_espera_ping_minutos"])
 
@@ -259,7 +259,7 @@ def icon_function(server,netdomain,userinput,passinput):
     app = QtWidgets.QApplication(sys.argv)
     w = QtWidgets.QWidget()
     
-    tray_icon = SystemTrayIcon(QtGui.QIcon("ICONE_AZUL.ico"), w , server,netdomain,userinput,passinput)
+    tray_icon = SystemTrayIcon(QtGui.QIcon("Hall_Blue-320x320.png"), w , server,netdomain,userinput,passinput)
     Thread(target = tray_icon.cycle_ping).start()
     Thread(target = tray_icon.connect_computer_services).start()
     sys.exit(app.exec_())
