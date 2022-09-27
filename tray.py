@@ -181,24 +181,24 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
 
 #https://www.accadius.com/using-python-read-windows-event-logs-multiple-servers/
 #https://www.blog.pythonlibrary.org/2010/07/27/pywin32-getting-windows-event-logs/
-def eventlog_Listening(userinput,passinput,ignored_notifications,server,netdomain):
+def eventlog_Listening(userinput,passinput,ignored_notifications,score_notifications,server,netdomain):
     logtype = 'Application' # 'Application' # 'Security'
     sessionlogin = win32evtlog.EvtOpenSession((server,userinput,netdomain,passinput,win32evtlog.EvtRpcLoginAuthDefault), win32evtlog.EvtRpcLogin , 0 , 0 )     
     eventhandler = win32event.CreateEvent(None, 1, 0, "wait") #criar um evento como ponto de referencia
     sub_flags = win32evtlog.EvtSubscribeToFutureEvents
     subscription = win32evtlog.EvtSubscribe(logtype, sub_flags, SignalEvent= eventhandler, Callback= None, Context= None,
     Query= "*", Session= sessionlogin)
-    read_event(subscription,ignored_notifications)
+    read_event(subscription,ignored_notifications,score_notifications)
     while 1:
         w=win32event.WaitForSingleObjectEx(eventhandler, 2000, True)
         if w==win32con.WAIT_OBJECT_0:
-            read_event(subscription,ignored_notifications)
+            read_event(subscription,ignored_notifications,score_notifications)
             #w=win32event.WaitForSingleObjectEx(eventhandler, 2000, True)
             time.sleep(2)
 
     #eventcreate /ID 1 /L APPLICATION /T INFORMATION /SO MYEVENTSOURCE /D "My first Log"
 
-def read_event(subscription,ignored_notifications):
+def read_event(subscription,ignored_notifications,score_notifications):
     events=win32evtlog.EvtNext(subscription, 10)
     print(events)
     if len(events)==0:
@@ -268,12 +268,17 @@ def main():
     with open("config.json") as f:
         json_data = json.load(f)
     ignored_notifications = json_data["ignored_notifications"]
+    score_notifications = json_data["score_notifications"]
     server = json_data["server"] # name of the target computer to get event logs
     netdomain= json_data["network_domain"]# name of the network domain to connect to
-    userinput = "dcarreiro"#input("Nome De Utilizador: ")
-    passinput = "Dcvb456$%&"#getpass.getpass("Password: ")
+    if json_data["use_account"] == "True" or json_data["use_account"] == "true":
+        userinput= json_data["username"]
+        passinput= json_data["password"]
+    else:
+        userinput = input("Nome De Utilizador: ")
+        passinput = getpass.getpass("Password: ")
     Thread(target = icon_function, args=(server,netdomain,userinput,passinput,)).start()
-    Thread(target = eventlog_Listening , args=(userinput,passinput,ignored_notifications,server,netdomain,)).start()
+    Thread(target = eventlog_Listening , args=(userinput,passinput,ignored_notifications,score_notifications,server,netdomain,)).start()
     
 
 if __name__ == '__main__':
