@@ -11,7 +11,7 @@ def notify_user(info):
     )
     #notification.title = source
     notification.message = info
-    notification.icon = "ICONE_AZUL.ico"
+    notification.icon = "Hall_Blue-320x320.png"
 
     notification.send()
     '''
