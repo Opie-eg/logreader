@@ -9,6 +9,7 @@ import win32event
 import win32con
 import json
 from notify import notify_user 
+from score import updateUserScore
 import wmi
 import platform    # For getting the operating system name
 import subprocess  # For executing a shell command
@@ -187,7 +188,7 @@ def eventlog_Listening(userinput,passinput,ignored_notifications,score_notificat
     eventhandler = win32event.CreateEvent(None, 1, 0, "wait") #criar um evento como ponto de referencia
     sub_flags = win32evtlog.EvtSubscribeToFutureEvents
     subscription = win32evtlog.EvtSubscribe(logtype, sub_flags, SignalEvent= eventhandler, Callback= None, Context= None,
-    Query= "*", Session= sessionlogin)
+    Query= "*", Session= None)
     read_event(subscription,ignored_notifications,score_notifications)
     while 1:
         w=win32event.WaitForSingleObjectEx(eventhandler, 2000, True)
@@ -209,6 +210,8 @@ def read_event(subscription,ignored_notifications,score_notifications):
             root = etree.fromstring(win32evtlog.EvtRender(event, win32evtlog.EvtRenderEventXml))
             provider = root.find(".//{http://schemas.microsoft.com/win/2004/08/events/event}Provider")#[@Name='Prototipo_PortalRFID']")
             info = []
+            scoreboard =[]
+
             if provider is not None:
                 computer = root.find(".//{http://schemas.microsoft.com/win/2004/08/events/event}Computer")
                 data = root.find(".//{http://schemas.microsoft.com/win/2004/08/events/event}Data")
@@ -219,7 +222,7 @@ def read_event(subscription,ignored_notifications,score_notifications):
                             resposta = "O reader não ligou."
                         else:
                             resposta = data.text
-                        
+                        scoreboard.append(data.text)
                         new_info= computer.text +";"+ time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())+";"+ resposta
                         info.append(new_info)
                         print(new_info)
@@ -227,6 +230,14 @@ def read_event(subscription,ignored_notifications,score_notifications):
                         notify_user(resposta)
             if len(info) > 0:
                 record_log(info)
+                for i in scoreboard:
+                    print("WEEEWOOO: ",i)
+                    if i in score_notifications[0]:
+                        value = score_notifications[0].index(i)
+                        notitype = score_notifications[1][value]
+                        print("WEEEWOOOITS IN: ",i,value,notitype)
+                        updateUserScore(1,computer.text,notitype)
+
 
 def record_log(info):
     file_name = 'event_logs.log'
@@ -261,14 +272,21 @@ def icon_function(server,netdomain,userinput,passinput):
     
     tray_icon = SystemTrayIcon(QtGui.QIcon("Hall_Blue-320x320.png"), w , server,netdomain,userinput,passinput)
     Thread(target = tray_icon.cycle_ping).start()
-    Thread(target = tray_icon.connect_computer_services).start()
+    #Thread(target = tray_icon.connect_computer_services).start()
     sys.exit(app.exec_())
   
 def main():
     with open("config.json") as f:
         json_data = json.load(f)
+
     ignored_notifications = json_data["ignored_notifications"]
-    score_notifications = json_data["score_notifications"]
+    score_verification= []
+    score_translation= []
+    for i in range(0,len(json_data["score_notifications"])):
+        score_verification.append(json_data["score_notifications"][i][0])
+        score_translation.append(json_data["score_notifications"][i][1])
+    score_notifications = [score_verification,score_translation]
+
     server = json_data["server"] # name of the target computer to get event logs
     netdomain= json_data["network_domain"]# name of the network domain to connect to
     if json_data["use_account"] == "True" or json_data["use_account"] == "true":
