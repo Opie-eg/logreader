@@ -1,6 +1,7 @@
 
 import sys
 import pythoncom
+import ctypes
 from PySide2 import QtWidgets, QtGui
 from threading import Thread
 import time
@@ -17,7 +18,9 @@ import webbrowser
 import getpass
 from lxml import etree
 from lxml.etree import _Element as Element, _ElementTree as ElementTree
-import os 
+import os
+
+from validate import verify 
 looping = True
 
 def ping(host):
@@ -47,7 +50,7 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
     
     CREATE A SYSTEM TRAY ICON CLASS AND ADD MENU
     """
-    def __init__(self, icon, parent, server, netdomain, userinput, passinput):
+    def __init__(self, icon, parent, server, netdomain, userinput, passinput,license_name):
         QtWidgets.QSystemTrayIcon.__init__(self, icon, parent)
         self.server = server
         self.netdomain = netdomain
@@ -57,6 +60,7 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
         menu = QtWidgets.QMenu(parent)
         self.menu_title_icon= menu.addAction("Hall RFID - Gestão de Portal")
         self.menu_title_icon.setIcon(QtGui.QIcon("Hall_Blue-320x320.png"))
+        self.licence_title_icon = menu.addAction("Licenciado para uso em: ", license_name)
         menu.addSeparator()
         menu.setToolTipsVisible(True)
         # Creating menu options based on ip"x" values in config.json each one of the menu options opens a page with the respective ip address.
@@ -231,11 +235,11 @@ def read_event(subscription,ignored_notifications,score_notifications):
             if len(info) > 0:
                 record_log(info)
                 for i in scoreboard:
-                    print("WEEEWOOO: ",i)
+                    #print("WEEEWOOO: ",i)
                     if i in score_notifications[0]:
                         value = score_notifications[0].index(i)
                         notitype = score_notifications[1][value]
-                        print("WEEEWOOOITS IN: ",i,value,notitype)
+                        #print("WEEEWOOOITS IN: ",i,value,notitype)
                         updateUserScore(1,computer.text,notitype)
 
 
@@ -266,11 +270,11 @@ def record_log(info):
     f.close
     f2.close
 
-def icon_function(server,netdomain,userinput,passinput):
+def icon_function(server,netdomain,userinput,passinput,license_name):
     app = QtWidgets.QApplication(sys.argv)
     w = QtWidgets.QWidget()
     
-    tray_icon = SystemTrayIcon(QtGui.QIcon("Hall_Blue-320x320.png"), w , server,netdomain,userinput,passinput)
+    tray_icon = SystemTrayIcon(QtGui.QIcon("Hall_Blue-320x320.png"), w , server,netdomain,userinput,passinput,license_name)
     Thread(target = tray_icon.cycle_ping).start()
     #Thread(target = tray_icon.connect_computer_services).start()
     sys.exit(app.exec_())
@@ -278,7 +282,9 @@ def icon_function(server,netdomain,userinput,passinput):
 def main():
     with open("config.json") as f:
         json_data = json.load(f)
-
+    license_name = json_data["licence_name"]
+    if verify(json_data["licence_key"],license_name) == False:
+        return
     ignored_notifications = json_data["ignored_notifications"]
     score_verification= []
     score_translation= []
@@ -295,7 +301,7 @@ def main():
     else:
         userinput = input("Nome De Utilizador: ")
         passinput = getpass.getpass("Password: ")
-    Thread(target = icon_function, args=(server,netdomain,userinput,passinput,)).start()
+    Thread(target = icon_function, args=(server,netdomain,userinput,passinput,license_name,)).start()
     Thread(target = eventlog_Listening , args=(userinput,passinput,ignored_notifications,score_notifications,server,netdomain,)).start()
     
 

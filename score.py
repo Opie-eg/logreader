@@ -22,7 +22,7 @@ from pathlib import Path
 
 
 def updateUserScore(userscore,computer,notitype):
-    #userscore e o valor a adicionar aos contadores
+       #userscore e o valor a adicionar aos contadores
        fle = Path('statistics.json')
        fle.touch(exist_ok=True)
        with open(fle, "r") as read_file:
