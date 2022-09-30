@@ -52,6 +52,7 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
     """
     def __init__(self, icon, parent, server, netdomain, userinput, passinput,license_name):
         QtWidgets.QSystemTrayIcon.__init__(self, icon, parent)
+        license_name= "Licenciado para uso em: " + license_name
         self.server = server
         self.netdomain = netdomain
         self.userinput= userinput
@@ -60,7 +61,7 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
         menu = QtWidgets.QMenu(parent)
         self.menu_title_icon= menu.addAction("Hall RFID - Gestão de Portal")
         self.menu_title_icon.setIcon(QtGui.QIcon("Hall_Blue-320x320.png"))
-        self.licence_title_icon = menu.addAction("Licenciado para uso em: ", license_name)
+        self.licence_title_icon1 = menu.addAction(license_name)
         menu.addSeparator()
         menu.setToolTipsVisible(True)
         # Creating menu options based on ip"x" values in config.json each one of the menu options opens a page with the respective ip address.
@@ -205,7 +206,7 @@ def eventlog_Listening(userinput,passinput,ignored_notifications,score_notificat
 
 def read_event(subscription,ignored_notifications,score_notifications):
     events=win32evtlog.EvtNext(subscription, 10)
-    print(events)
+    #print(events)
     if len(events)==0:
         return
     else:
@@ -229,7 +230,7 @@ def read_event(subscription,ignored_notifications,score_notifications):
                         scoreboard.append(data.text)
                         new_info= computer.text +";"+ time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())+";"+ resposta
                         info.append(new_info)
-                        print(new_info)
+                        #print(new_info)
                         #new func here
                         notify_user(resposta)
             if len(info) > 0:
@@ -284,6 +285,7 @@ def main():
         json_data = json.load(f)
     license_name = json_data["licence_name"]
     if verify(json_data["licence_key"],license_name) == False:
+        #print("why")
         return
     ignored_notifications = json_data["ignored_notifications"]
     score_verification= []

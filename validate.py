@@ -3,7 +3,7 @@ import hashlib
 def verify(key,name):
     global score
     score = 0
-    name_result = ""
+    name_result = False
     # encontra o check digit
     check_digit = key[2]
     check_digit_count = 0
@@ -13,11 +13,11 @@ def verify(key,name):
     chunks = key.split('-')
     if len(chunks) == 6:
         hash=chunks.pop()
-        name_veri = hashlib.sha1(name.encode())
+        
+        name_veri = hashlib.sha1(name.encode()).hexdigest()
         if hash == name_veri:
             name_result = True
-    else:
-        name_result= False
+            
     
     # verifica cada bloco
     for chunk in chunks:
