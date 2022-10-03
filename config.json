@@ -17,7 +17,7 @@
 "admin_reader": "192.168.1.50",
 "tempo_espera_ping_minutos": 15,
 "tempo_espera_servico_horas": 12,
-"use_account": "True",
+"use_account": "nottrue",
 "username": "dcarreiro",
 "password": "Dcvb456$%&",
 "licence_key": "u887-pc8o-4mq2-3cku-phej-2e6f9b0d5885b6010f9167787445617f553a735f",

@@ -11,6 +11,7 @@ import win32con
 import json
 from notify import notify_user 
 from score import updateUserScore
+
 import wmi
 import platform    # For getting the operating system name
 import subprocess  # For executing a shell command
@@ -193,7 +194,7 @@ def eventlog_Listening(userinput,passinput,ignored_notifications,score_notificat
     eventhandler = win32event.CreateEvent(None, 1, 0, "wait") #criar um evento como ponto de referencia
     sub_flags = win32evtlog.EvtSubscribeToFutureEvents
     subscription = win32evtlog.EvtSubscribe(logtype, sub_flags, SignalEvent= eventhandler, Callback= None, Context= None,
-    Query= "*", Session= None)
+    Query= "*", Session= sessionlogin)
     read_event(subscription,ignored_notifications,score_notifications)
     while 1:
         w=win32event.WaitForSingleObjectEx(eventhandler, 2000, True)
@@ -279,7 +280,19 @@ def icon_function(server,netdomain,userinput,passinput,license_name):
     Thread(target = tray_icon.cycle_ping).start()
     #Thread(target = tray_icon.connect_computer_services).start()
     sys.exit(app.exec_())
-  
+
+from tkinter import *
+from functools import partial
+
+def validateLogin(username, password,tkWindow):
+    user= username.get()
+    passw= password.get()
+    if len(user) != 0 and len(passw) != 0:
+        tkWindow.destroy()
+
+    return 
+
+
 def main():
     with open("config.json") as f:
         json_data = json.load(f)
@@ -301,8 +314,34 @@ def main():
         userinput= json_data["username"]
         passinput= json_data["password"]
     else:
-        userinput = input("Nome De Utilizador: ")
-        passinput = getpass.getpass("Password: ")
+            #window
+        tkWindow = Tk()  
+        tkWindow.geometry('200x75')  
+        tkWindow.title('login')
+
+        #username label and text entry box
+        usernameLabel = Label(tkWindow, text="Nome").grid(row=0, column=0)
+        username = StringVar()
+        usernameEntry = Entry(tkWindow, textvariable=username).grid(row=0, column=1)  
+
+        #password label and password entry box
+        passwordLabel = Label(tkWindow,text="Palavra-Passe").grid(row=1, column=0)  
+        password = StringVar()
+        passwordEntry = Entry(tkWindow, textvariable=password, show='*').grid(row=1, column=1)  
+
+        bfunc = partial(validateLogin, username, password,tkWindow)
+
+        #login button
+        loginButton = Button(tkWindow, text="Login", command=bfunc).grid(row=4, column=1)  
+        
+        tkWindow.mainloop()
+        #print(bfunc)    
+        userinput = username.get()
+        passinput = password.get()
+        
+        #userinput = input("Nome De Utilizador: ")
+        #passinput = getpass.getpass("Password: ")
+    print(userinput,passinput)
     Thread(target = icon_function, args=(server,netdomain,userinput,passinput,license_name,)).start()
     Thread(target = eventlog_Listening , args=(userinput,passinput,ignored_notifications,score_notifications,server,netdomain,)).start()
     
