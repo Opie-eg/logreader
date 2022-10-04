@@ -35,7 +35,7 @@ def ping(host):
 
     # Building the command. Ex: "ping -c 1 google.com"
     command = ['ping', param, '1', host]
-    process = subprocess.Popen(command,stdout=subprocess.PIPE,stderr= subprocess.PIPE)
+    process = subprocess.Popen(command,stdout=subprocess.PIPE,stderr= subprocess.PIPE, shell=True)
     streamdata = process.communicate()[0]
     #print(str(streamdata))
     if not 'Reply from {host}'in str(streamdata):
@@ -64,6 +64,7 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
         self.menu_title_icon.setIcon(QtGui.QIcon("Hall_Blue-320x320.png"))
         self.licence_title_icon1 = menu.addAction(license_name)
         menu.addSeparator()
+        
         menu.setToolTipsVisible(True)
         # Creating menu options based on ip"x" values in config.json each one of the menu options opens a page with the respective ip address.
         self.menudict = {}
@@ -143,16 +144,7 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
             #self.connect_computer_services(1)
         finally:
             pythoncom.CoUninitialize()
-    '''
-    def start_service(self):
-        print("Starting Connection to server...")
-        username = "%s\\%s" % (self.netdomain, self.userinput)
-        computer = wmi.WMI(self.server, user = username, password = self.passinput)
-        print("...Success!")
-        computer.Win32_Service(Name = 'Prototipo_ServicoPortalRFID')[0].StartService()
-        self.connect_computer_services()
-    '''
-    
+
     def onTrayIconActivated(self, reason):
         """
         This function will trigger function on click or double click
@@ -316,8 +308,18 @@ def main():
     else:
             #window
         tkWindow = Tk()  
-        tkWindow.geometry('200x75')  
-        tkWindow.title('login')
+        width = 200 # Width 
+        height = 75 # Height
+        
+        screen_width = tkWindow.winfo_screenwidth()  # Width of the screen
+        screen_height = tkWindow.winfo_screenheight() # Height of the screen
+        
+        # Calculate Starting X and Y coordinates for Window
+        x = (screen_width) - (width)
+        y = (screen_height) - (height*2)
+        tkWindow.iconbitmap("ICONE_AZUL.ico")
+        tkWindow.geometry('%dx%d+%d+%d' % (width, height, x, y))
+        tkWindow.title('Login')
 
         #username label and text entry box
         usernameLabel = Label(tkWindow, text="Nome").grid(row=0, column=0)
@@ -341,10 +343,12 @@ def main():
         
         #userinput = input("Nome De Utilizador: ")
         #passinput = getpass.getpass("Password: ")
-    print(userinput,passinput)
-    Thread(target = icon_function, args=(server,netdomain,userinput,passinput,license_name,)).start()
-    Thread(target = eventlog_Listening , args=(userinput,passinput,ignored_notifications,score_notifications,server,netdomain,)).start()
     
+    if len(userinput) != 0 and len(passinput) != 0:
+        Thread(target = icon_function, args=(server,netdomain,userinput,passinput,license_name,)).start()
+        Thread(target = eventlog_Listening , args=(userinput,passinput,ignored_notifications,score_notifications,server,netdomain,)).start()
+    else:
+        return
 
 if __name__ == '__main__':
     main()
