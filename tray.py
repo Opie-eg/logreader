@@ -51,10 +51,10 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
     
     CREATE A SYSTEM TRAY ICON CLASS AND ADD MENU
     """
-    def __init__(self, icon, parent, server, netdomain, userinput, passinput,license_name):
+    def __init__(self, icon, parent, serverlist, netdomain, userinput, passinput,license_name):
         QtWidgets.QSystemTrayIcon.__init__(self, icon, parent)
         license_name= "Licenciado para uso em: " + license_name
-        self.server = server
+        self.server = serverlist
         self.netdomain = netdomain
         self.userinput= userinput
         self.passinput= passinput
@@ -68,8 +68,10 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
         menu.setToolTipsVisible(True)
         # Creating menu options based on ip"x" values in config.json each one of the menu options opens a page with the respective ip address.
         self.menudict = {}
+        self.servicemenudict = {}
         iplist= []
         hostlist = []
+        secondserverlist = []
         with open("config.json") as f:
             json_data = json.load(f)
             for i in json_data:
@@ -83,11 +85,22 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
                 hostlist.append(json_data[iplist[ip]][0]) 
                 #print(iplist[ip],json_data[iplist[ip]][0],json_data[iplist[ip]][1])
         menu.addSeparator()
+        for server in serverlist:
+            self.servicemenudict[server[0]]= menu.addAction("Serviço RFID - "+ server[0])
+            self.servicemenudict[server[0]].triggered.connect(lambda ignored= serverlist, a= server[1],: Thread(target = self.start_service, args = (a,)).start())
+            self.servicemenudict[server[0]].setIcon(QtGui.QIcon("readyblue.png"))
+            self.servicemenudict[server[0]].setToolTip('Clicar para ligar o Serviço.')
+            #secondserverlist.append(json_data[iplist[server]][0]) 
+
+        '''
         self.service_option = menu.addAction("Serviço RFID")
         self.service_option.setIcon(QtGui.QIcon("readyblue.png"))
         self.service_option.triggered.connect(lambda : Thread(target = self.start_service).start())
         self.service_option.setToolTip('Clicar para ligar o Serviço.')
         #self.service_option.setToolTip('Serviço ativo')
+        
+        '''
+       
           
         menu.addSeparator()
 
@@ -133,15 +146,15 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
                 break
                 
     
-    def start_service(self):
+    def start_service(self,server):
         pythoncom.CoInitialize()
         try:
             print("Starting Connection to server...")
             username = "%s\\%s" % (self.netdomain, self.userinput)
-            computer = wmi.WMI(self.server, user = username, password = self.passinput)
+            computer = wmi.WMI(server, user = username, password = self.passinput)
             print("...Success!")
             computer.Win32_Service(Name = 'Prototipo_ServicoPortalRFID')[0].StartService()
-            #self.connect_computer_services(1)
+           
         finally:
             pythoncom.CoUninitialize()
 
@@ -299,8 +312,10 @@ def main():
         score_verification.append(json_data["score_notifications"][i][0])
         score_translation.append(json_data["score_notifications"][i][1])
     score_notifications = [score_verification,score_translation]
-
-    server = json_data["server"] # name of the target computer to get event logs
+    server_list = []
+    for i in json_data:
+        if "server" in i:
+            server_list.append([i,json_data[i]])
     netdomain= json_data["network_domain"]# name of the network domain to connect to
     if json_data["use_account"] == "True" or json_data["use_account"] == "true":
         userinput= json_data["username"]
@@ -345,8 +360,8 @@ def main():
         #passinput = getpass.getpass("Password: ")
     
     if len(userinput) != 0 and len(passinput) != 0:
-        Thread(target = icon_function, args=(server,netdomain,userinput,passinput,license_name,)).start()
-        Thread(target = eventlog_Listening , args=(userinput,passinput,ignored_notifications,score_notifications,server,netdomain,)).start()
+        Thread(target = icon_function, args=(server_list,netdomain,userinput,passinput,license_name,)).start()
+        Thread(target = eventlog_Listening , args=(userinput,passinput,ignored_notifications,score_notifications,server_list[0][1],netdomain,)).start()
     else:
         return
 
