@@ -28,10 +28,10 @@ def updateUserScore(userscore,computer,notitype):
        with open(fle, "r") as read_file:
               try:
                      logValues = json.loads(read_file.read())
-                     print(logValues)
+                     #print(logValues)
               except json.decoder.JSONDecodeError:
                      logValues = ""
-                     print(logValues)
+                     #print(logValues)
               score= userscore
               newTypeLogValues = {}
               LogName = {}

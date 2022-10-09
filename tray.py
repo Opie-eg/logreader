@@ -1,7 +1,6 @@
 
 import sys
 import pythoncom
-import ctypes
 from PySide2 import QtWidgets, QtGui
 from threading import Thread
 import time
@@ -11,7 +10,8 @@ import win32con
 import json
 from notify import notify_user 
 from score import updateUserScore
-
+from tkinter import ttk
+from ttkthemes import ThemedTk
 import wmi
 import platform    # For getting the operating system name
 import subprocess  # For executing a shell command
@@ -86,8 +86,8 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
                 #print(iplist[ip],json_data[iplist[ip]][0],json_data[iplist[ip]][1])
         menu.addSeparator()
         for server in serverlist:
-            self.servicemenudict[server[0]]= menu.addAction("Serviço RFID - "+ server[0])
-            self.servicemenudict[server[0]].triggered.connect(lambda ignored= serverlist, a= server[1],: Thread(target = self.start_service, args = (a,)).start())
+            self.servicemenudict[server[0]]= menu.addAction("Serviço RFID - "+ server[1][1])
+            self.servicemenudict[server[0]].triggered.connect(lambda ignored= serverlist, a= server[1][0],: Thread(target = self.start_service, args = (a,)).start())
             self.servicemenudict[server[0]].setIcon(QtGui.QIcon("readyblue.png"))
             self.servicemenudict[server[0]].setToolTip('Clicar para ligar o Serviço.')
             #secondserverlist.append(json_data[iplist[server]][0]) 
@@ -113,37 +113,42 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
         #self.activated.connect(self.onTrayIconActivated)
         self.show()
 
-    def connect_computer_services(self,cycle=None):
+    def connect_computer_services(self):
         with open("config.json") as f:
                 json_data = json.load(f)
+        username = "%s\\%s" % (self.netdomain, self.userinput)
         while True:
-            pythoncom.CoInitialize()
-            try:
-                print("Starting Connection to server...")
-                username = "%s\\%s" % (self.netdomain, self.userinput)
-                computer = wmi.WMI(self.server, user = username, password = self.passinput)
-                #c = wmi.WMI("MachineB", user=r"GUIA\fred", passwor\d ="secret")
-                print("...Success!")
-                stopped_services = computer.Win32_Service (State="Stopped")
-                servicefound = False
-                if stopped_services:
-                    for s in stopped_services:
-                        if s.Name == "Prototipo_ServicoPortalRFID":
-                            print(s.Caption, "service is not running")
-                            servicefound = True
-                            #computer.Win32_Service(Name = 'Prototipo_ServicoPortalRFID')[0].StartService()
-                            self.service_option.setIcon(QtGui.QIcon("notreadyred.png"))
-                            self.setIcon(QtGui.QIcon("Hall_Red-320x320.png"))
+            for i in self.servicemenudict:
+                
+                pythoncom.CoInitialize()
+                try:
+                    print("Starting Connection to server...")
+                    server= json_data[i][0]
+                    computer = wmi.WMI(server, user = username, password = self.passinput)
+                    #c = wmi.WMI("MachineB", user=r"GUIA\fred", passwor\d ="secret")
+                    print("...Success!")
+                    stopped_services = computer.Win32_Service (State="Stopped")
+                    servicefound = False
+                    if stopped_services:
+                        for s in stopped_services:
+                            if s.Name == "Prototipo_ServicoPortalRFID":
+                                print(s.Caption, "service is not running")
+                                servicefound = True
+                                #computer.Win32_Service(Name = 'Prototipo_ServicoPortalRFID')[0].StartService()
+                                self.servicemenudict[i].setIcon(QtGui.QIcon("notreadyred.png"))
+                                self.setIcon(QtGui.QIcon("Hall_Red-320x320.png"))
 
-                    if servicefound == False:
-                        self.service_option.setIcon(QtGui.QIcon("readygreen.png"))
-                        self.setIcon(QtGui.QIcon("Hall_Blue-320x320.png"))
-            finally:
-                pythoncom.CoUninitialize()
-            if cycle == None:
-                time.sleep(60*60*json_data["tempo_espera_servico_horas"])
-            else:
-                break
+                        if servicefound == False:
+                            self.servicemenudict[i].setIcon(QtGui.QIcon("readygreen.png"))
+                            self.setIcon(QtGui.QIcon("Hall_Blue-320x320.png"))
+                except:
+                    self.servicemenudict[i].setIcon(QtGui.QIcon("notreadyred.png"))
+                    self.setIcon(QtGui.QIcon("Hall_Red-320x320.png"))
+
+                finally:
+                    pythoncom.CoUninitialize()
+               
+            time.sleep(60*60*json_data["tempo_espera_servico_horas"])
                 
     
     def start_service(self,server):
@@ -154,7 +159,7 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
             computer = wmi.WMI(server, user = username, password = self.passinput)
             print("...Success!")
             computer.Win32_Service(Name = 'Prototipo_ServicoPortalRFID')[0].StartService()
-           
+            
         finally:
             pythoncom.CoUninitialize()
 
@@ -199,15 +204,17 @@ def eventlog_Listening(userinput,passinput,ignored_notifications,score_notificat
     eventhandler = win32event.CreateEvent(None, 1, 0, "wait") #criar um evento como ponto de referencia
     sub_flags = win32evtlog.EvtSubscribeToFutureEvents
     subscription = win32evtlog.EvtSubscribe(logtype, sub_flags, SignalEvent= eventhandler, Callback= None, Context= None,
-    Query= "*", Session= sessionlogin)
+    Query= "*", Session= None)
     read_event(subscription,ignored_notifications,score_notifications)
     while 1:
-        w=win32event.WaitForSingleObjectEx(eventhandler, 2000, True)
-        if w==win32con.WAIT_OBJECT_0:
-            read_event(subscription,ignored_notifications,score_notifications)
-            #w=win32event.WaitForSingleObjectEx(eventhandler, 2000, True)
-            time.sleep(2)
-
+        try:
+            w=win32event.WaitForSingleObjectEx(eventhandler, 2000, True)
+            if w==win32con.WAIT_OBJECT_0:
+                read_event(subscription,ignored_notifications,score_notifications)
+                #w=win32event.WaitForSingleObjectEx(eventhandler, 2000, True)
+                time.sleep(2)
+        except:
+            pass
     #eventcreate /ID 1 /L APPLICATION /T INFORMATION /SO MYEVENTSOURCE /D "My first Log"
 
 def read_event(subscription,ignored_notifications,score_notifications):
@@ -283,7 +290,7 @@ def icon_function(server,netdomain,userinput,passinput,license_name):
     
     tray_icon = SystemTrayIcon(QtGui.QIcon("Hall_Blue-320x320.png"), w , server,netdomain,userinput,passinput,license_name)
     Thread(target = tray_icon.cycle_ping).start()
-    #Thread(target = tray_icon.connect_computer_services).start()
+    Thread(target = tray_icon.connect_computer_services).start()
     sys.exit(app.exec_())
 
 from tkinter import *
@@ -303,7 +310,7 @@ def main():
         json_data = json.load(f)
     license_name = json_data["licence_name"]
     if verify(json_data["licence_key"],license_name) == False:
-        #print("why")
+        print("why")
         return
     ignored_notifications = json_data["ignored_notifications"]
     score_verification= []
@@ -322,12 +329,14 @@ def main():
         passinput= json_data["password"]
     else:
             #window
-        tkWindow = Tk()  
-        width = 200 # Width 
+        
+        tkWindow = ThemedTk(theme="clearlooks")  
+        width = 207 # Width 
         height = 75 # Height
         
         screen_width = tkWindow.winfo_screenwidth()  # Width of the screen
         screen_height = tkWindow.winfo_screenheight() # Height of the screen
+
         
         # Calculate Starting X and Y coordinates for Window
         x = (screen_width) - (width)
@@ -336,20 +345,23 @@ def main():
         tkWindow.geometry('%dx%d+%d+%d' % (width, height, x, y))
         tkWindow.title('Login')
 
+        login_frame = ttk.Frame(tkWindow, width=207, height=75)
+        login_frame.pack(fill="both", expand=1)
+        
         #username label and text entry box
-        usernameLabel = Label(tkWindow, text="Nome").grid(row=0, column=0)
+        usernameLabel = ttk.Label(login_frame, text="Nome").grid(row=0, column=0)
         username = StringVar()
-        usernameEntry = Entry(tkWindow, textvariable=username).grid(row=0, column=1)  
+        usernameEntry = ttk.Entry(login_frame, textvariable=username).grid(row=0, column=1)  
 
         #password label and password entry box
-        passwordLabel = Label(tkWindow,text="Palavra-Passe").grid(row=1, column=0)  
+        passwordLabel = ttk.Label(login_frame,text="Palavra-Passe").grid(row=1, column=0)  
         password = StringVar()
-        passwordEntry = Entry(tkWindow, textvariable=password, show='*').grid(row=1, column=1)  
+        passwordEntry = ttk.Entry(login_frame, textvariable=password, show='*').grid(row=1, column=1)  
 
         bfunc = partial(validateLogin, username, password,tkWindow)
 
         #login button
-        loginButton = Button(tkWindow, text="Login", command=bfunc).grid(row=4, column=1)  
+        loginButton = ttk.Button(login_frame, text="Login", command=bfunc).grid(row=4, column=1)  
         
         tkWindow.mainloop()
         #print(bfunc)    
@@ -361,7 +373,12 @@ def main():
     
     if len(userinput) != 0 and len(passinput) != 0:
         Thread(target = icon_function, args=(server_list,netdomain,userinput,passinput,license_name,)).start()
-        Thread(target = eventlog_Listening , args=(userinput,passinput,ignored_notifications,score_notifications,server_list[0][1],netdomain,)).start()
+        Listener_Threads = [Thread(target = eventlog_Listening , args=(userinput,passinput,ignored_notifications,score_notifications,i[0],netdomain,))
+        for i in server_list]
+        for thread in Listener_Threads:
+            thread.start()
+        for thread in Listener_Threads:
+            thread.join()
     else:
         return
 

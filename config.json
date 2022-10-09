@@ -1,7 +1,7 @@
 {
-"server0": "192.168.1.15",
-"server1": "192.168.1.15",
-"server2": "192.168.1.15",
+"server0": ["192.168.1.15","Server 0"],
+"server1": ["192.168.1.16","Server 1"],
+
 
 "network_domain" : "GUIA",
 "ignored_notifications" : ["Codigo a processar","Lista do portal limpa",
@@ -19,10 +19,9 @@
 "ip1": ["192.168.1.33","Portal 1"],
 "tempo_espera_ping_minutos": 15,
 "tempo_espera_servico_horas": 12,
-"use_account": "nottrue",
+"use_account": "true",
 "username": "dcarreiro",
 "password": "Dcvb456$%&",
 "licence_key": "u887-pc8o-4mq2-3cku-phej-2e6f9b0d5885b6010f9167787445617f553a735f",
 "licence_name": "teste"
-
 }
