@@ -372,13 +372,13 @@ def main():
         #passinput = getpass.getpass("Password: ")
     
     if len(userinput) != 0 and len(passinput) != 0:
-        Thread(target = icon_function, args=(server_list,netdomain,userinput,passinput,license_name,)).start()
+        a = Thread(target = icon_function, args=(server_list,netdomain,userinput,passinput,license_name,))
         Listener_Threads = [Thread(target = eventlog_Listening , args=(userinput,passinput,ignored_notifications,score_notifications,i[0],netdomain,))
         for i in server_list]
+        Listener_Threads.append(a)
         for thread in Listener_Threads:
             thread.start()
-        for thread in Listener_Threads:
-            thread.join()
+        
     else:
         return
 
