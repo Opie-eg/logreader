@@ -204,7 +204,7 @@ def eventlog_Listening(userinput,passinput,ignored_notifications,score_notificat
     eventhandler = win32event.CreateEvent(None, 1, 0, "wait") #criar um evento como ponto de referencia
     sub_flags = win32evtlog.EvtSubscribeToFutureEvents
     subscription = win32evtlog.EvtSubscribe(logtype, sub_flags, SignalEvent= eventhandler, Callback= None, Context= None,
-    Query= "*", Session= None)
+    Query= "*", Session= sessionlogin)
     read_event(subscription,ignored_notifications,score_notifications)
     while 1:
         try:
