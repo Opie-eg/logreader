@@ -1,6 +1,8 @@
 
 import sys
+import re
 import pythoncom
+import tkinter.messagebox
 from PySide2 import QtWidgets, QtGui
 from threading import Thread
 import time
@@ -16,7 +18,6 @@ import wmi
 import platform    # For getting the operating system name
 import subprocess  # For executing a shell command
 import webbrowser
-import getpass
 from lxml import etree
 from lxml.etree import _Element as Element, _ElementTree as ElementTree
 import os
@@ -198,9 +199,17 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
 
 #https://www.accadius.com/using-python-read-windows-event-logs-multiple-servers/
 #https://www.blog.pythonlibrary.org/2010/07/27/pywin32-getting-windows-event-logs/
+
+def is_valid_ip(ip):
+    m = re.match(r"^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$", ip)
+    return bool(m) and all(map(lambda n: 0 <= int(n) <= 255, m.groups()))
+    
 def eventlog_Listening(userinput,passinput,ignored_notifications,score_notifications,server,netdomain):
     logtype = 'Application' # 'Application' # 'Security'
-    sessionlogin = win32evtlog.EvtOpenSession((server,userinput,netdomain,passinput,win32evtlog.EvtRpcLoginAuthDefault), win32evtlog.EvtRpcLogin , 0 , 0 )     
+    if is_valid_ip(server) == True:
+        sessionlogin = win32evtlog.EvtOpenSession((server,userinput,netdomain,passinput,win32evtlog.EvtRpcLoginAuthDefault), win32evtlog.EvtRpcLogin , 0 , 0 )     
+    else:
+        sessionlogin = None
     eventhandler = win32event.CreateEvent(None, 1, 0, "wait") #criar um evento como ponto de referencia
     sub_flags = win32evtlog.EvtSubscribeToFutureEvents
     subscription = win32evtlog.EvtSubscribe(logtype, sub_flags, SignalEvent= eventhandler, Callback= None, Context= None,
@@ -249,11 +258,9 @@ def read_event(subscription,ignored_notifications,score_notifications):
             if len(info) > 0:
                 record_log(info)
                 for i in scoreboard:
-                    #print("WEEEWOOO: ",i)
                     if i in score_notifications[0]:
                         value = score_notifications[0].index(i)
                         notitype = score_notifications[1][value]
-                        #print("WEEEWOOOITS IN: ",i,value,notitype)
                         updateUserScore(1,computer.text,notitype)
 
 
@@ -304,27 +311,47 @@ def validateLogin(username, password,tkWindow):
 
     return 
 
-
 def main():
     with open("config.json") as f:
         json_data = json.load(f)
-    license_name = json_data["licence_name"]
-    if verify(json_data["licence_key"],license_name) == False:
-        print("why")
+
+    if all(key in json_data for key in("licence_key","licence_name"))==False or (verify(json_data["licence_key"],json_data["licence_name"]) == False):
+        tkinter.messagebox.showerror('HallRFID_GestorPortal Erro JSON', 'Chave de Licença em falha. \nVerifique se os campos "licence_key" e "licence_name" estão corretamente definidos no ficheiro config.json')
         return
-    ignored_notifications = json_data["ignored_notifications"]
+    if "ignored_notifications" in json_data:
+        ignored_notifications = json_data["ignored_notifications"]
+    else:
+        ignored_notifications = ["Codigo a processar","Lista do portal limpa",
+"Tag adicionada","A tag que passou no portal","Usar web service?:",
+"Tentativa de liga\u00E7\u00E3o 2","Tentativa de liga\u00E7\u00E3o 3","Tentativa de liga\u00E7\u00E3o 4"]
+
     score_verification= []
     score_translation= []
-    for i in range(0,len(json_data["score_notifications"])):
-        score_verification.append(json_data["score_notifications"][i][0])
-        score_translation.append(json_data["score_notifications"][i][1])
+    if "score_notifications" in json_data:
+        for i in range(0,len(json_data["score_notifications"])):
+            score_verification.append(json_data["score_notifications"][i][0])
+            score_translation.append(json_data["score_notifications"][i][1])
+    else:
+        score_notilist= [
+            ["Falha no acesso \u00E0 base de dados do web service","FalhaBD"],
+            ["Falha no acesso ao web service","FalhaWS"],["O leitor Impinj Ligou","LeitorL"],
+            ["O leitor Impinj Desligou","LeitorD"],["Sentido 1_2","Sentido 1_2"],["Sentido 2_1","Sentido 2_1"],
+            ["Este codigo RFID n\u00C3o est\u00E1 autorizado a sair","RFIDSair"],
+            ["N\u00C3o foi poss\u00EDvel adicionar a passagem ao webservice","NoPassagemWS"],
+            ["O servi\u00E7o parou","ServiceStop"],
+            ["My first Log","TESTE"]]
+        for i in range(0,len(score_notilist)):
+            score_verification.append(score_notilist[i][0])
+            score_translation.append(score_notilist[i][1])
+
     score_notifications = [score_verification,score_translation]
     server_list = []
     for i in json_data:
         if "server" in i:
             server_list.append([i,json_data[i]])
     netdomain= json_data["network_domain"]# name of the network domain to connect to
-    if json_data["use_account"] == "True" or json_data["use_account"] == "true":
+    
+    if all(key in json_data for key in("use_account","username","password")) and (json_data["use_account"] == "True" or json_data["use_account"] == "true"):
         userinput= json_data["username"]
         passinput= json_data["password"]
     else:
@@ -372,8 +399,8 @@ def main():
         #passinput = getpass.getpass("Password: ")
     
     if len(userinput) != 0 and len(passinput) != 0:
-        a = Thread(target = icon_function, args=(server_list,netdomain,userinput,passinput,license_name,))
-        Listener_Threads = [Thread(target = eventlog_Listening , args=(userinput,passinput,ignored_notifications,score_notifications,i[0],netdomain,))
+        a = Thread(target = icon_function, args=(server_list,netdomain,userinput,passinput,json_data["licence_name"],))
+        Listener_Threads = [Thread(target = eventlog_Listening , args=(userinput,passinput,ignored_notifications,score_notifications,i[1][0],netdomain,))
         for i in server_list]
         Listener_Threads.append(a)
         for thread in Listener_Threads:
