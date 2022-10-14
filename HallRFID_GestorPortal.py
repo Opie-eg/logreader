@@ -406,6 +406,7 @@ def main():
         #passinput = getpass.getpass("Password: ")
     
     if len(userinput) != 0 and len(passinput) != 0:
+        encrypt_password(passinput)
         a = Thread(target = icon_function, args=(server_list,netdomain,userinput,passinput,json_data["licence_name"],))
         Listener_Threads = [Thread(target = eventlog_Listening , args=(userinput,passinput,ignored_notifications,score_notifications,i[1][0],netdomain,))
         for i in server_list]
