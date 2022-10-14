@@ -90,7 +90,7 @@
                 "ServiceStop": 0
             },
             "set": {
-                "FalhaBD": 45,
+                "FalhaBD": 0,
                 "FalhaWS": 0,
                 "LeitorL": 0,
                 "LeitorD": 0,
@@ -232,8 +232,7 @@
                 "Sentido1-2": 0,
                 "Sentido2-1": 0,
                 "NoPassagemWS": 0,
-                "ServiceStop": 0,
-                "TESTE": 5
+                "ServiceStop": 0
             },
             "out": {
                 "FalhaBD": 0,
@@ -379,7 +378,6 @@
                 "Sentido2-1": 0,
                 "NoPassagemWS": 0,
                 "ServiceStop": 0,
-                "TESTE": 20
             },
             "nov": {
                 "FalhaBD": 0,

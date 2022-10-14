@@ -118,6 +118,10 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
         with open("config.json") as f:
                 json_data = json.load(f)
         username = "%s\\%s" % (self.netdomain, self.userinput)
+        if "tempo_espera_servico_horas" in json_data:
+            tempo_horas = json_data["tempo_espera_servico_horas"]
+        else:
+            tempo_horas = 12
         while True:
             for i in self.servicemenudict:
                 
@@ -149,7 +153,7 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
                 finally:
                     pythoncom.CoUninitialize()
                
-            time.sleep(60*60*json_data["tempo_espera_servico_horas"])
+            time.sleep(60*60*tempo_horas)
                 
     
     def start_service(self,server):
@@ -180,6 +184,10 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
         counter = 0
         with open("config.json") as f:
             json_data = json.load(f)
+        if "tempo_espera_ping_minutos" in json_data:
+            tempo_min = json_data["tempo_espera_ping_minutos"]
+        else:
+            tempo_min = 15
         while True:
             for i in self.menudict:
                 response = ping(json_data[i][0])
@@ -194,7 +202,7 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
             elif counter >= len(self.menudict):
                 self.setIcon(QtGui.QIcon("Hall_Blue-320x320.png"))
             counter = 0 
-            time.sleep(60*json_data["tempo_espera_ping_minutos"])
+            time.sleep(60*tempo_min)
 
 
 #https://www.accadius.com/using-python-read-windows-event-logs-multiple-servers/
@@ -235,7 +243,7 @@ def read_event(subscription,ignored_notifications,score_notifications):
         for event in events:
             #print(win32evtlog.EvtRender(event, win32evtlog.EvtRenderEventXml))
             root = etree.fromstring(win32evtlog.EvtRender(event, win32evtlog.EvtRenderEventXml))
-            provider = root.find(".//{http://schemas.microsoft.com/win/2004/08/events/event}Provider")#[@Name='Prototipo_PortalRFID']")
+            provider = root.find(".//{http://schemas.microsoft.com/win/2004/08/events/event}Provider[@Name='Prototipo_PortalRFID']")
             info = []
             scoreboard =[]
 
@@ -338,8 +346,7 @@ def main():
             ["O leitor Impinj Desligou","LeitorD"],["Sentido 1_2","Sentido 1_2"],["Sentido 2_1","Sentido 2_1"],
             ["Este codigo RFID n\u00C3o est\u00E1 autorizado a sair","RFIDSair"],
             ["N\u00C3o foi poss\u00EDvel adicionar a passagem ao webservice","NoPassagemWS"],
-            ["O servi\u00E7o parou","ServiceStop"],
-            ["My first Log","TESTE"]]
+            ["O servi\u00E7o parou","ServiceStop"]]
         for i in range(0,len(score_notilist)):
             score_verification.append(score_notilist[i][0])
             score_translation.append(score_notilist[i][1])
