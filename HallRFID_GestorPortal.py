@@ -21,8 +21,8 @@ import webbrowser
 from lxml import etree
 from lxml.etree import _Element as Element, _ElementTree as ElementTree
 import os
+from validate import encrypt_password,decrypt_password,verify
 
-from validate import verify 
 looping = True
 
 def ping(host):
@@ -360,10 +360,10 @@ def main():
     
     if all(key in json_data for key in("use_account","username","password")) and (json_data["use_account"] == "True" or json_data["use_account"] == "true"):
         userinput= json_data["username"]
-        passinput= json_data["password"]
+        passinput= decrypt_password(json_data["password"])
     else:
-            #window
-        
+
+        #window
         tkWindow = ThemedTk(theme="clearlooks")  
         width = 207 # Width 
         height = 75 # Height
